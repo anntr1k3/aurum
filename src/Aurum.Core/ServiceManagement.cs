@@ -123,6 +123,15 @@ public sealed class ServiceManager
         _stateRepository = stateRepository ?? throw new ArgumentNullException(nameof(stateRepository));
     }
 
+    private static void EnsureNotProtected(string serviceName)
+    {
+        if (ServiceAnalyzer.IsProtected(serviceName))
+        {
+            throw new InvalidOperationException(
+                $"Служба '{serviceName}' входит в системную основу. Aurum исключает её из оптимизаций и не будет её отключать.");
+        }
+    }
+
     public async Task<ServiceEvaluation> EvaluateServiceAsync(
         ServiceDefinition service,
         CancellationToken cancellationToken = default)
@@ -150,6 +159,8 @@ public sealed class ServiceManager
 
         try
         {
+            EnsureNotProtected(serviceName);
+
             var service = await _controlStore.GetServiceAsync(serviceName, cancellationToken);
             if (service is null)
             {
@@ -228,6 +239,26 @@ public sealed class ServiceManager
                 return;
             }
 
+            // Both the start mode and the service name come from a file in the user's
+            // profile, which is writable without elevation, while the revert itself
+            // usually runs elevated. Aurum only ever sets a service to Disabled, so a
+            // service that is not currently disabled has nothing left to restore, and
+            // writing the recorded mode anyway would turn an edited snapshot into a way
+            // to enable an arbitrary service. Dropping the tracking entry is also the
+            // right answer for drift: the change is already gone.
+            var service = await _controlStore.GetServiceAsync(serviceName, cancellationToken);
+            if (service is null || service.StartMode != ServiceStartMode.Disabled)
+            {
+                await _stateRepository.RemoveAsync(serviceName, cancellationToken);
+                return;
+            }
+
+            if (!Enum.IsDefined(entry.OriginalStartMode))
+            {
+                throw new InvalidOperationException(
+                    $"Снимок службы '{serviceName}' содержит неизвестный режим запуска. Aurum не будет его применять.");
+            }
+
             await _controlStore.ChangeStartModeAsync(
                 serviceName,
                 entry.OriginalStartMode,
@@ -266,6 +297,11 @@ public sealed class ServiceManager
             {
                 return;
             }
+
+            // Repair re-disables a service named by the snapshot rather than by the user's
+            // click, so an edited snapshot would otherwise be enough to turn off the
+            // firewall or Defender through an elevated Aurum.
+            EnsureNotProtected(serviceName);
 
             await _controlStore.ChangeStartModeAsync(serviceName, ServiceStartMode.Disabled, null, cancellationToken);
             try

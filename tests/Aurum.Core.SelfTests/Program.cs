@@ -53,6 +53,9 @@ internal static partial class Program
             ("Service manager detects and repairs drift", ServiceManagerDriftAndRepairAsync),
             ("Service groups are valid and evaluate correctly", ServiceGroupsAndEvaluationAsync),
             ("Service revert restores the delayed auto-start flag", ServiceRevertRestoresDelayedAutoStartAsync),
+            ("Service disable refuses protected system services", ServiceDisableRejectsProtectedServiceAsync),
+            ("Service repair refuses a protected service named by a tampered snapshot", ServiceRepairRejectsProtectedServiceAsync),
+            ("Service revert of an enabled service only drops tracking", ServiceRevertOfEnabledServiceOnlyDropsTrackingAsync),
             ("Storage tuning snapshots and toggles options", StorageTuningSnapshotsAndTogglesAsync),
             ("Storage tuning requires administrative context", StorageTuningRequiresAdminAsync),
             ("Network tuning applies presets and reverts cleanly", NetworkTuningAppliesAndRevertsAsync),
@@ -754,20 +757,22 @@ internal static partial class Program
         var stateRepo = new InMemoryServiceStateRepository();
         var manager = new ServiceManager(controlStore, stateRepo);
 
+        // Delayed auto-start in its real Windows configuration, and outside the protected
+        // set, so the manager will actually let Aurum disable it.
         controlStore.AddService(new ServiceDefinition(
-            "wuauserv", "Windows Update", "Delayed automatic service",
+            "MapsBroker", "Downloaded Maps Manager", "Delayed automatic service",
             ServiceRunState.Running, ServiceStartMode.Automatic, true, 4321, []));
 
-        await manager.DisableServiceAsync("wuauserv");
+        await manager.DisableServiceAsync("MapsBroker");
 
-        var persisted = await stateRepo.GetAsync("wuauserv");
+        var persisted = await stateRepo.GetAsync("MapsBroker");
         NotNull(persisted, "Persisted service state was not saved.");
         True(persisted!.OriginalDelayedAutoStart, "The delayed auto-start flag was not captured.");
 
         controlStore.StartModeWrites.Clear();
-        await manager.RevertServiceAsync("wuauserv");
+        await manager.RevertServiceAsync("MapsBroker");
 
-        var reverted = controlStore.GetService("wuauserv")!;
+        var reverted = controlStore.GetService("MapsBroker")!;
         Equal(ServiceStartMode.Automatic, reverted.StartMode, "Expected start mode to revert to Automatic.");
         True(reverted.IsDelayedAutoStart, "Revert must restore the delayed auto-start flag.");
 
@@ -776,6 +781,94 @@ internal static partial class Program
         True(
             revertWrite.DelayedAutoStart == true,
             "Revert must pass the captured delayed auto-start flag to the SCM, not leave it unspecified.");
+    }
+
+    /// <summary>
+    /// The service list hides the toggle for protected services, but that is a view-level
+    /// check. The manager is the layer that actually writes to the SCM, so it enforces the
+    /// same exclusion.
+    /// </summary>
+    private static async Task ServiceDisableRejectsProtectedServiceAsync()
+    {
+        var controlStore = new InMemoryServiceControlStore();
+        var stateRepo = new InMemoryServiceStateRepository();
+        var manager = new ServiceManager(controlStore, stateRepo);
+
+        controlStore.AddService(new ServiceDefinition(
+            "WinDefend", "Microsoft Defender Antivirus Service", "Antivirus",
+            ServiceRunState.Running, ServiceStartMode.Automatic, false, 900, []));
+
+        await ThrowsAsync<InvalidOperationException>(() => manager.DisableServiceAsync("WinDefend"));
+
+        Equal(
+            ServiceStartMode.Automatic,
+            controlStore.GetService("WinDefend")!.StartMode,
+            "A protected service must keep its start mode.");
+        True(controlStore.StartModeWrites.Count == 0, "A protected service must not reach the SCM at all.");
+        True(await stateRepo.GetAsync("WinDefend") is null, "A refused disable must not leave tracking state behind.");
+    }
+
+    /// <summary>
+    /// Repair takes its service name from the persisted snapshot rather than from the
+    /// click, and the snapshot lives in the user's profile where it is writable without
+    /// elevation. Without the exclusion, an edited snapshot would be enough to have an
+    /// elevated Aurum turn off Defender or the firewall.
+    /// </summary>
+    private static async Task ServiceRepairRejectsProtectedServiceAsync()
+    {
+        var controlStore = new InMemoryServiceControlStore();
+        var stateRepo = new InMemoryServiceStateRepository();
+        var manager = new ServiceManager(controlStore, stateRepo);
+
+        controlStore.AddService(new ServiceDefinition(
+            "MpsSvc", "Windows Defender Firewall", "Firewall",
+            ServiceRunState.Running, ServiceStartMode.Automatic, false, 901, []));
+
+        // Stands in for a snapshot file edited by a process running as the user without
+        // elevation: Aurum itself would never have recorded a protected service.
+        await stateRepo.SaveAsync(new PersistedServiceEntry(
+            "MpsSvc", ServiceStartMode.Automatic, false, DateTimeOffset.UtcNow));
+
+        var error = await ThrowsAsync<InvalidOperationException>(() => manager.RepairServiceAsync("MpsSvc"));
+
+        True(
+            error.Message.Contains("MpsSvc", StringComparison.Ordinal),
+            $"Repair failed for an unrelated reason instead of rejecting the protected service: {error.Message}");
+        Equal(
+            ServiceStartMode.Automatic,
+            controlStore.GetService("MpsSvc")!.StartMode,
+            "A tampered snapshot must not be able to disable the firewall.");
+        True(controlStore.StartModeWrites.Count == 0, "A refused repair must not reach the SCM at all.");
+    }
+
+    /// <summary>
+    /// Aurum only ever sets a service to Disabled, so a service that is not disabled has
+    /// nothing left to restore. Writing the recorded start mode regardless would make an
+    /// edited snapshot a way to enable an arbitrary service through an elevated revert.
+    /// </summary>
+    private static async Task ServiceRevertOfEnabledServiceOnlyDropsTrackingAsync()
+    {
+        var controlStore = new InMemoryServiceControlStore();
+        var stateRepo = new InMemoryServiceStateRepository();
+        var manager = new ServiceManager(controlStore, stateRepo);
+
+        controlStore.AddService(new ServiceDefinition(
+            "RemoteRegistry", "Remote Registry", "Deliberately disabled by the administrator",
+            ServiceRunState.Stopped, ServiceStartMode.Manual, false, 0, []));
+
+        await stateRepo.SaveAsync(new PersistedServiceEntry(
+            "RemoteRegistry", ServiceStartMode.Automatic, false, DateTimeOffset.UtcNow));
+
+        await manager.RevertServiceAsync("RemoteRegistry");
+
+        Equal(
+            ServiceStartMode.Manual,
+            controlStore.GetService("RemoteRegistry")!.StartMode,
+            "Revert must not raise the start mode of a service Aurum had not disabled.");
+        True(controlStore.StartModeWrites.Count == 0, "Revert must not reach the SCM when there is nothing to restore.");
+        True(
+            await stateRepo.GetAsync("RemoteRegistry") is null,
+            "Revert must still drop the tracking entry, otherwise the service stays listed as managed forever.");
     }
 
     private static async Task ServiceGroupsAndEvaluationAsync()

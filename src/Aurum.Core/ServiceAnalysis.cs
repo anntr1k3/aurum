@@ -54,6 +54,14 @@ public static class ServiceAnalyzer
             ["RetailDemo"] = ("Демонстрационный режим", "Предназначена для розничного демонстрационного режима Windows."),
         };
 
+    /// <summary>
+    /// Services Aurum must never disable, such as the firewall, Defender and the RPC
+    /// infrastructure. The service views already hide the toggle for these, but the
+    /// managers enforce it too: a start mode is also written during repair, and there the
+    /// service name comes from the persisted snapshot rather than from a user action.
+    /// </summary>
+    public static bool IsProtected(string serviceName) => Protected.Contains(serviceName);
+
     public static IReadOnlyList<ServiceAnalysisItem> Analyze(IEnumerable<ServiceDefinition> definitions)
     {
         var services = definitions.ToArray();
