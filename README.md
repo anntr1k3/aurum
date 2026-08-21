@@ -1,104 +1,140 @@
-# Aurum — Open-Source AtlasOS Companion (v1.0.0)
+# Aurum — Open-Source AtlasOS & Windows Companion (v1.0.0)
 
-Aurum is a modern, transparent, auditable, and fully reversible Windows companion designed specifically for **AtlasOS** and clean Windows optimization.
+[![Build Status](https://github.com/anntr1k3/aurum/actions/workflows/build.yml/badge.svg)](https://github.com/anntr1k3/aurum/actions/workflows/build.yml)
+[![GitHub Pages](https://github.com/anntr1k3/aurum/actions/workflows/pages.yml/badge.svg)](https://anntr1k3.github.io/aurum/)
+[![License: MIT](https://img.shields.io/badge/Лицензия-MIT-blue.svg)](LICENSE)
+[![Platform: Windows 10/11](https://img.shields.io/badge/Платформа-Windows%2010%20%2F%2011%20x64-0078D6.svg)](https://github.com/anntr1k3/aurum)
+[![.NET 8.0](https://img.shields.io/badge/.NET-8.0%20(C%23%2012)-512BD4.svg)](https://dotnet.microsoft.com/)
 
-Instead of opaque "magic" scripts or destructive tweaks, Aurum adheres to a strict engineering philosophy:
-- **No Snake-Oil:** Transparent system optimizations, zero hidden actions, and no ungrounded claims.
-- **Measurable System Responsiveness:** Focuses on interrupt handling (MSI Mode), timer resolution, DPC queue reduction, SSD wear prevention, and clean OS defaults.
-- **Full Reversibility & Drift Detection:** Every modification captures the original pre-Aurum state in `%LOCALAPPDATA%\Aurum\` snapshots and can be restored or repaired at any time.
-- **Nordic Blue Design:** Clean, distraction-free modern UI with **Unbounded** & **Onest** typography.
-- **Zero Telemetry:** Completely offline, no background telemetry, and no remote script execution.
-
----
-
-## 🚀 Key Modules & Capabilities
-
-### 1. 🎛 Tweak Catalog & Granular Controls
-- **24 Granular Tweaks** across 8 categories: `Проводник`, `Интерфейс`, `Игры`, `Конфиденциальность`, `Ввод`, `Система`, `Ядро`, `Сеть`.
-- Includes power-user options for real-time Defender I/O scanning, UAC prompt reduction, background Windows Updates, and System Restore (VSS), each with clear risk ratings and exact rollback.
-- Automatic live drift detection: highlights if Windows Update reverted any settings, with a 1-click **Repair** button.
-
-### 2. ⚙️ Services Management & 6 Safe Group Presets
-- **Win32 SCM Native Integration:** Safe startup type configuration and service stop/start.
-- **Dependency Graph:** Shows reverse dependants and services to prevent breaking essential system features.
-- **6 Built-in Presets:**
-  - `telemetry` (DiagTrack, dmwappushservice, weridsvc)
-  - `xbox` (XboxGipSvc, XblAuthManager, XblGameSave, XboxNetApiSvc)
-  - `print` (Spooler, Fax)
-  - `maps-location` (MapsBroker, lfsvc)
-  - `touch` (TabletInputService)
-  - `insider` (wisvc)
-
-### 3. 💾 Storage & SSD Optimization
-- **NTFS 8.3 Names:** Disables legacy DOS short name generation (`PROGRA~1`), accelerating directory traversal and preventing MFT bloat.
-- **LastAccess Time:** Disables file last access timestamp updates, significantly reducing write wear on SSD/NVMe drives.
-- **Hibernation Manager:** Toggles hibernation (`powercfg -h off/on`), freeing **8 to 32+ GB** of space on the system drive by deleting `C:\hiberfil.sys`.
-- **SysMain (SuperFetch):** Disables redundant RAM prefetching for high-speed SSDs.
-- **Windows ReTrim & Analysis:** Native `defrag /L` (TRIM) and `defrag /A` on selected solid-state volumes.
-
-### 4. 🌐 Network Tuning & DNS Switcher
-- **1-Click DNS Profiles:**
-  - ⚡ **Cloudflare DNS** (`1.1.1.1` / `1.0.0.1`) — Ultra-low latency and strict privacy.
-  - 🌍 **Google Public DNS** (`8.8.8.8` / `8.8.4.4`) — Global reliability and speed.
-  - 🛡 **Quad9 Security** (`9.9.9.9` / `149.112.112.112`) — Malware, botnet, and phishing blocking.
-  - 🚫 **AdGuard DNS** (`94.140.14.14` / `94.140.15.15`) — Ad, tracker, and banner blocking.
-  - 🔄 **DHCP Reset** — Restores automatic DNS from local router/ISP.
-- **DNS Resolver Cache Flush:** Native `ipconfig /flushdns` in one click.
-- **TCP Stack Auto-Tuning:** Controls `Receive Window Auto-Tuning Level` via `netsh`.
-- **Live Latency & Loss Probe:** 4-sample ICMP ping test with latency statistics.
-
-### 5. ⚡ Power Plans & Core Parking
-- Safe scheme switching via Win32 Power API.
-- Core Parking management (`CPMINCORES`, `CPMAXCORES`) on isolated scheme clones with exact rollback.
-
-### 6. 📊 Hardware Monitoring & Safe Cleanup
-- Real-time CPU, RAM, Disk, and Network utilization with live sparklines.
-- Safe temp file and DirectX shader cache scanner with age thresholds.
+[ 🇬🇧 **English version (README.en.md)** ](README.en.md) | [ 🌐 **Промо-сайт с Liquid Glass** ](https://anntr1k3.github.io/aurum/) | [ 📚 **Документация** ](docs/architecture.md)
 
 ---
 
-## 🛠 Building from Source & Single-File Release
+**Aurum** — это современное, прозрачное, строго аудируемое и 100% обратимое приложение для оптимизации Windows, созданное специально для **AtlasOS** и чистых игровых систем.
 
-### Prerequisites
-- Windows 10/11 (x64)
-- .NET 8.0 SDK (or portable SDK in `.dotnet/`)
+Вместо непрозрачных «магических» bat-файлов, скрытых твиков и обещаний плацебо, Aurum следует строгой инженерной философии:
+* 🎯 **Никаких мифов и плацебо:** Только измеримые параметры, отсутствие скрытых действий и необоснованных заявлений.
+* ⚡ **Измеримый отклик системы:** Аппаратные прерывания (MSI Mode), таймер 0.500 мс (2000 Гц), снижение DPC-задержек, защита ресурса ячеек SSD и чистые системные настройки.
+* 🛡️ **100% детерминированный откат (Rollback):** Перед любым изменением снимается точный снимок состояния в `%LOCALAPPDATA%\Aurum\`. Откат в 1 клик возвращает систему ровно в то состояние, в котором она была.
+* 🔍 **Контроль внешнего дрейфа (Drift Detection):** Если обновление Windows сбросило настройку, Aurum мгновенно подсветит статус «Дрейф» с возможностью исправления в 1 клик.
+* 🎨 **Nordic Blue Design:** Премиальный, не отвлекающий внимание темный интерфейс на типографике **Unbounded** и **Onest** с режимами **Simple** и **Pro**.
+* 🔒 **0% телеметрии и 0% нагрузки в фоне:** Полностью офлайн, 0 сетевых запросов, отсутствие фоновых служб и автозагрузки.
 
-### Automated Release Build (Single-File Standalone EXE)
-Run the automated build script:
+---
+
+## 🚀 Ключевые модули и возможности
+
+### 1. 🎛 Каталог из 24 системных твиков
+* **24 гранулярных параметра** в 8 категориях: `Проводник`, `Интерфейс`, `Игры`, `Конфиденциальность`, `Ввод`, `Система`, `Ядро`, `Сеть`.
+* Тонкая настройка:
+  * `Win32PrioritySeparation = 0x26 (38)` — квантование планировщика для приоритета активной игры.
+  * `DisablePagingExecutive = 1` — удержание ядра и драйверов в оперативной памяти (запрет сброса в pagefile).
+  * `SystemResponsiveness = 0` — 100% мощности CPU для игр (снятие 20% мультимедийного резерва).
+  * `NetworkThrottlingIndex = 0xFFFFFFFF` — отключение сетевого троттлинга.
+  * Опции для Defender (Real-Time I/O scan), UAC, Windows Update и VSS с прозрачной оценкой рисков.
+* **4 готовых 1-клик профиля:** `Баланс`, `Игровой`, `Приватность`, `Ноутбук / Офис`.
+
+### 2. ⚙️ Менеджер служб Windows и 6 безопасных групп
+* **Нативная интеграция с Win32 SCM:** Безопасное изменение типов запуска и управление состоянием служб.
+* **Граф зависимостей в RAM:** Анализ обратного дерева зависимостей для защиты критически важных системных служб ядра от отключения.
+* **6 встроенных пресетов:**
+  * `telemetry` (DiagTrack, dmwappushservice, weridsvc) — отключение сбора диагностических данных.
+  * `xbox` (XboxGipSvc, XblAuthManager, XblGameSave, XboxNetApiSvc) — службы Xbox Live.
+  * `print` (Spooler, Fax) — очередь печати и факс.
+  * `maps-location` (MapsBroker, lfsvc) — геопозиционирование и карты.
+  * `touch` (TabletInputService) — сенсорный ввод и перо.
+  * `insider` (wisvc, RetailDemo) — программа предварительной оценки.
+
+### 3. 💾 Оптимизация накопителей и защита ресурса SSD
+* **NTFS 8.3 Names:** Отключение генерации коротких DOS-имен (`PROGRA~1`) — ускоряет обход директорий и предотвращает фрагментацию главной таблицы файлов (MFT).
+* **LastAccess Updates:** Отключение обновления меток времени последнего доступа к файлам — значительно снижает количество циклов перезаписи ячеек памяти SSD/NVMe.
+* **Hibernation Manager:** Отключение гибернации (`powercfg -h off/on`) — освобождает **от 8 до 32+ ГБ** на системном диске за счет удаления `C:\hiberfil.sys`.
+* **SysMain (SuperFetch):** Отключение избыточного префетчинга RAM для скоростных твердотельных накопителей.
+* **Windows ReTrim & Анализ:** Нативный вызов `defrag.exe /L` и `/A` для выбранного тома с аппаратной защитой от выполнения TRIM на магнитных HDD.
+
+### 4. 🌐 Сетевой стек и переключатель DNS
+* **1-клик DNS-профили:**
+  * ⚡ **Cloudflare DNS** (`1.1.1.1` / `1.0.0.1`) — минимальная задержка и строгая конфиденциальность.
+  * 🌍 **Google Public DNS** (`8.8.8.8` / `8.8.4.4`) — глобальная стабильность и скорость.
+  * 🛡 **Quad9 Security** (`9.9.9.9` / `149.112.112.112`) — защита от вредоносных доменов и фишинга.
+  * 🚫 **AdGuard DNS** (`94.140.14.14` / `94.140.15.15`) — блокировка рекламы и трекеров на уровне DNS.
+  * 🔄 **DHCP Reset** — возврат к автоматическому получению DNS от роутера / провайдера.
+* **Очистка кэша резолвера (Flush DNS):** Нативный вызов `ipconfig /flushdns` в один клик.
+* **TCP Auto-Tuning:** Управление автоподстройкой окна приема TCP через `netsh`.
+* **Live ICMP Probe:** 4-точечный тест задержки и стабильности сети со статистикой джиттера.
+
+### 5. ⚡ Аппаратные прерывания (MSI Mode)
+* Инвентаризация шины PCI (`GPU`, `Network`, `Audio`, `USB`, `Storage`, `System`).
+* 1-клик пресет **«Оптимизировать для игр»**: включение MSI и приоритет `High` для GPU и сетевого адаптера для устранения очередей IRQ и минимизации DPC Latency.
+* 1-клик кнопка возврата исходных настроек из сохраненного локального снимка.
+
+### 6. ⏱️ Системный таймер 0.500 мс (2000 Гц)
+* Нативное управление через P/Invoke `ntdll.dll` (`NtQueryTimerResolution`, `NtSetTimerResolution`).
+* Пресеты: `0.500 мс (2000 Гц)` для киберспорта, `1.000 мс (1000 Гц)`, `По умолчанию (~15.625 мс)`.
+* Управление политикой `GlobalTimerResolutionRequests` в Windows 11.
+
+### 7. 🔋 Планы питания и Core Parking
+* Управление распарковкой 100% ядер процессора (`CPMINCORES`, `CPMAXCORES`) для исключения микрозадержек при пробуждении спящих ядер.
+* Создание изолированного клона схемы питания Aurum без изменения встроенных системных профилей Windows.
+
+### 8. 🧹 Двухфазная очистка диска (Safe Cleanup)
+* 2-фазный аудит: сначала формирование неизменяемого списка кандидатов, затем ручное подтверждение.
+* Аппаратная защита от состояния гонки (TOCTOU): проверка размера и даты модификации непосредственно перед удалением.
+* Безопасная очистка кэша шейдеров DirectX/Vulkan и Temp без рекурсивного удаления системных папок.
+
+### 9. 🛡️ Офлайн-контроль целостности AtlasOS (Atlas Health)
+* Автономный анализ структуры `%WINDIR%\AtlasModules` и `%WINDIR%\AtlasDesktop`.
+* Сверка SHA-256 хэшей официальных компонентов (`multichoice.exe`, `SetTimerResolution.exe`) без сетевых запросов и выполнения внешних скриптов.
+
+### 10. 📊 Аппаратный мониторинг (HUD)
+* Загрузка CPU, GPU, VRAM, RAM и дисковой активности с живыми спарклайнами.
+* **0% нагрузки на CPU в фоне:** мониторинг автоматически засыпает при переключении на другие вкладки.
+
+---
+
+## 🛠 Сборка из исходников и создание релиза
+
+### Требования:
+* Windows 10 / 11 (x64)
+* .NET 8.0 SDK (установленный в системе или локальный в папке `.dotnet/`)
+
+### Автоматическая сборка релиза (Single-File Standalone EXE):
+Запустите скрипт автоматической сборки в PowerShell:
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\build_release.ps1
 ```
-This script will:
-1. Run the entire suite of **38 self-tests**.
-2. Compile and publish a standalone single-file binary: `dist\Aurum.exe` (~72.8 MB, self-contained with embedded runtime).
+Этот скрипт:
+1. Выполняет полный прогон **38 автоматических тестов ядра**.
+2. Компилирует и упаковывает автономный single-file исполняемый файл: `dist\Aurum.exe` (~72.8 МБ, self-contained со встроенной средой выполнения .NET).
 
-### Manual Build
+### Ручная сборка через .NET CLI:
 ```powershell
-# Build solution
+# 1. Сборка всего решения
 dotnet build .\Aurum.sln --configuration Release
 
-# Run self-tests
+# 2. Запуск всех 38 тестов
 dotnet run --project .\tests\Aurum.Core.SelfTests
 
-# Run app
+# 3. Запуск приложения
 dotnet run --project .\src\Aurum.App
 ```
 
 ---
 
-- All tweaks are strongly typed, transparent, and opt-in with zero automated blind scripts.
-- Every modification creates an exact pre-mutation snapshot enabling 1-click restore.
-- All configuration snapshots are versioned (`SchemaVersion: 1`) and stored locally in `%LOCALAPPDATA%\Aurum\`:
-  - `state.json` (Registry tweaks)
-  - `services.json` (Services state)
-  - `storage_tuning.json` (SSD settings)
-  - `network_tuning.json` (DNS settings)
-  - `power_plan.json` (Power plans)
-  - `core_parking.json` (Core parking)
-  - `msi_state.json` (MSI device modes)
+## 🔒 Архитектура детерминированного отката
+
+* Все операции строго типизированы, прозрачны и применяются только по явному выбору пользователя.
+* Перед каждой записью снимается детальный снимок live-состояния реестра (включая флаг отсутствия ключа).
+* Снимки версионируются (`SchemaVersion: 1`) и сохраняются локально на вашем ПК в `%LOCALAPPDATA%\Aurum\`:
+  * `state.json` — твики реестра
+  * `services.json` — конфигурация служб
+  * `storage_tuning.json` — параметры накопителей и SSD
+  * `network_tuning.json` — DNS и сетевой стек
+  * `power_plan.json` — схемы электропитания
+  * `core_parking.json` — параметры парковки ядер CPU
+  * `msi_state.json` — режимы прерываний PCI-устройств
 
 ---
 
-## 📄 License
-Distributed under the **MIT License**. See [`LICENSE`](LICENSE) for details.
-
+## 📄 Лицензия
+Проект распространяется под открытой лицензией **MIT License**. Подробности в файле [`LICENSE`](LICENSE).
