@@ -69,10 +69,20 @@ descriptions, and direct dependencies, then builds reverse dependants in memory.
 Classification is allowlist-based: critical names are protected, a small set of
 feature services is context-dependent, and everything else remains unclassified.
 Disable, revert, and repair go through `ServiceManager` with a rollback
-snapshot of start mode and delayed auto-start. Repair refuses names in the
-protected set. Revert writes a start mode from the snapshot only when the
+snapshot of start mode and delayed auto-start. Disable, repair, and a revert
+that would write a start mode accept only names in the declared optional set
+(the same context-dependent services the UI can select). Protected names are
+refused as well. Revert writes a start mode from the snapshot only when the
 service is currently disabled, so an edited snapshot cannot enable an arbitrary
-service.
+service, and cannot change an undeclared name that happens to be disabled.
+
+## MSI interrupt configuration
+
+Writes under `HKLM\SYSTEM\CurrentControlSet\Enum\PCI` accept only a
+three-segment instance id (`PCI\{hardware}\{instance}`). Apply and revert look
+the id up in the live PCI inventory and refuse devices marked as not
+modifiable. The registry adapter then opens that hardware key and instance as
+nested subkeys rather than concatenating the snapshot string onto the PCI root.
 
 ## Network diagnostics boundary
 

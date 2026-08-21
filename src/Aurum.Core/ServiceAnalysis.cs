@@ -62,6 +62,14 @@ public static class ServiceAnalyzer
     /// </summary>
     public static bool IsProtected(string serviceName) => Protected.Contains(serviceName);
 
+    /// <summary>
+    /// Names Aurum may disable, revert, or repair. The snapshot file is writable
+    /// without elevation, so repair and revert must not take an arbitrary service
+    /// name from JSON: only this declared optional set, which matches the services
+    /// the user can actually select in the UI.
+    /// </summary>
+    public static bool IsDeclaredOptional(string serviceName) => Contextual.ContainsKey(serviceName);
+
     public static IReadOnlyList<ServiceAnalysisItem> Analyze(IEnumerable<ServiceDefinition> definitions)
     {
         var services = definitions.ToArray();

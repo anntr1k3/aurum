@@ -292,7 +292,7 @@ public sealed class ServiceItemViewModel : ObservableObject
         return true;
     }
 
-    public bool CanDisable => Safety != ServiceSafetyClass.Protected &&
+    public bool CanDisable => Safety == ServiceSafetyClass.ContextDependent &&
                               TrackingState == ServiceTrackingState.NotTracked &&
                               _item.Service.StartMode != ServiceStartMode.Disabled;
 

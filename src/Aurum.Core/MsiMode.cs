@@ -85,6 +85,36 @@ public interface IMsiStateRepository
     Task ClearAsync(CancellationToken cancellationToken = default);
 }
 
+public static class MsiDeviceId
+{
+    public static bool TryParse(string? deviceInstanceId, out string hardwareId, out string instanceId)
+    {
+        hardwareId = string.Empty;
+        instanceId = string.Empty;
+        if (string.IsNullOrWhiteSpace(deviceInstanceId))
+        {
+            return false;
+        }
+
+        var parts = deviceInstanceId.Split('\\');
+        if (parts.Length != 3 ||
+            !parts[0].Equals("PCI", StringComparison.OrdinalIgnoreCase) ||
+            parts[1].Length == 0 ||
+            parts[2].Length == 0 ||
+            parts[1].Contains('/') ||
+            parts[2].Contains('/') ||
+            parts[1].Contains("..", StringComparison.Ordinal) ||
+            parts[2].Contains("..", StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        hardwareId = parts[1];
+        instanceId = parts[2];
+        return true;
+    }
+}
+
 public sealed class MsiModeManager
 {
     private readonly SemaphoreSlim _gate = new(1, 1);
@@ -128,16 +158,12 @@ public sealed class MsiModeManager
         try
         {
             var devices = await _inventory.CaptureAsync(cancellationToken).ConfigureAwait(false);
-            var target = devices.FirstOrDefault(d => string.Equals(d.DeviceInstanceId, deviceInstanceId, StringComparison.OrdinalIgnoreCase));
-            if (target is null)
-            {
-                throw new InvalidOperationException($"Устройство с ID '{deviceInstanceId}' не найдено.");
-            }
+            var target = ResolveWritableDevice(devices, deviceInstanceId);
 
             // Сохраняем исходное состояние, если еще не сохраняли
             var state = await _repository.ReadAsync(cancellationToken).ConfigureAwait(false);
             var snapshots = state?.Devices.ToList() ?? new List<MsiDeviceSnapshot>();
-            if (!snapshots.Any(s => string.Equals(s.DeviceInstanceId, deviceInstanceId, StringComparison.OrdinalIgnoreCase)))
+            if (!snapshots.Any(s => string.Equals(s.DeviceInstanceId, target.DeviceInstanceId, StringComparison.OrdinalIgnoreCase)))
             {
                 snapshots.Add(new MsiDeviceSnapshot(
                     target.DeviceInstanceId,
@@ -151,7 +177,7 @@ public sealed class MsiModeManager
             }
 
             var limit = target.MessageNumberLimit > 0 ? target.MessageNumberLimit : 1;
-            await _inventory.SetMsiPropertiesAsync(deviceInstanceId, enableMsi, limit, priority, cancellationToken).ConfigureAwait(false);
+            await _inventory.SetMsiPropertiesAsync(target.DeviceInstanceId, enableMsi, limit, priority, cancellationToken).ConfigureAwait(false);
         }
         finally
         {
@@ -170,7 +196,9 @@ public sealed class MsiModeManager
         try
         {
             var devices = await _inventory.CaptureAsync(cancellationToken).ConfigureAwait(false);
-            var targetDevices = devices.Where(d => d.CanModifyMsi && (
+            var targetDevices = devices.Where(d =>
+                d.CanModifyMsi &&
+                MsiDeviceId.TryParse(d.DeviceInstanceId, out _, out _) && (
                 d.Category == MsiDeviceCategory.Gpu ||
                 d.Category == MsiDeviceCategory.Network ||
                 d.Category == MsiDeviceCategory.Audio ||
@@ -244,19 +272,21 @@ public sealed class MsiModeManager
                 return;
             }
 
+            var liveDevices = await _inventory.CaptureAsync(cancellationToken).ConfigureAwait(false);
+
             // The snapshot is cleared only after every device has been restored, so a
             // failure part-way through keeps the rollback data for a second attempt.
             var failures = new List<Exception>();
             foreach (var snapshot in state.Devices)
             {
-                var enableMsi = snapshot.WasMsiSupported ?? false;
-                var limit = snapshot.PreviousMessageLimit ?? 1;
-                var priority = snapshot.PreviousPriority ?? MsiDevicePriority.Undefined;
-
                 try
                 {
+                    var live = ResolveWritableDevice(liveDevices, snapshot.DeviceInstanceId);
+                    var enableMsi = snapshot.WasMsiSupported ?? false;
+                    var limit = snapshot.PreviousMessageLimit ?? 1;
+                    var priority = snapshot.PreviousPriority ?? MsiDevicePriority.Undefined;
                     await _inventory.SetMsiPropertiesAsync(
-                        snapshot.DeviceInstanceId,
+                        live.DeviceInstanceId,
                         enableMsi,
                         limit,
                         priority,
@@ -281,5 +311,32 @@ public sealed class MsiModeManager
         {
             _gate.Release();
         }
+    }
+
+    private static PciDeviceMsiInfo ResolveWritableDevice(
+        IReadOnlyList<PciDeviceMsiInfo> devices,
+        string deviceInstanceId)
+    {
+        if (!MsiDeviceId.TryParse(deviceInstanceId, out _, out _))
+        {
+            throw new InvalidOperationException(
+                $"Идентификатор устройства '{deviceInstanceId}' не является допустимым путём PCI. Aurum не будет записывать в реестр по этому имени.");
+        }
+
+        var target = devices.FirstOrDefault(d =>
+            string.Equals(d.DeviceInstanceId, deviceInstanceId, StringComparison.OrdinalIgnoreCase));
+        if (target is null)
+        {
+            throw new InvalidOperationException(
+                $"Устройство '{deviceInstanceId}' отсутствует в текущем инвентаре PCI. Снимок не будет использован для записи.");
+        }
+
+        if (!target.CanModifyMsi)
+        {
+            throw new InvalidOperationException(
+                $"Устройство '{target.Name}' исключено из изменения MSI. Aurum не будет записывать его параметры прерываний.");
+        }
+
+        return target;
     }
 }

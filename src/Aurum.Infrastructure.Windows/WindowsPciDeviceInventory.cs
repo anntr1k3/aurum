@@ -123,21 +123,30 @@ public sealed class WindowsPciDeviceInventory : IMsiDeviceInventory
         MsiDevicePriority priority,
         CancellationToken cancellationToken = default)
     {
-        var relativePath = deviceInstanceId;
-        if (relativePath.StartsWith(@"PCI\", StringComparison.OrdinalIgnoreCase))
+        if (!MsiDeviceId.TryParse(deviceInstanceId, out var hardwareId, out var instanceId))
         {
-            relativePath = relativePath.Substring(4);
+            throw new InvalidOperationException(
+                $"Идентификатор устройства '{deviceInstanceId}' не является допустимым путём PCI. Aurum не будет записывать в реестр по этому имени.");
         }
 
-        var fullDeviceKeyPath = $@"{PciEnumPath}\{relativePath}";
+        using var pciKey = Registry.LocalMachine.OpenSubKey(PciEnumPath, writable: true);
+        if (pciKey is null)
+        {
+            throw new InvalidOperationException($"Не удалось открыть ключ реестра {PciEnumPath}.");
+        }
 
-        using var deviceKey = Registry.LocalMachine.OpenSubKey(fullDeviceKeyPath, writable: true);
+        using var hardwareKey = pciKey.OpenSubKey(hardwareId, writable: true);
+        if (hardwareKey is null)
+        {
+            throw new InvalidOperationException($"Устройство PCI '{hardwareId}' не найдено в инвентаре.");
+        }
+
+        using var deviceKey = hardwareKey.OpenSubKey(instanceId, writable: true);
         if (deviceKey is null)
         {
-            throw new InvalidOperationException($"Не удалось открыть ключ реестра устройства: {fullDeviceKeyPath}");
+            throw new InvalidOperationException($"Экземпляр устройства '{hardwareId}\\{instanceId}' не найден в инвентаре.");
         }
 
-        // Управление MessageSignaledInterruptProperties
         using var devParamsKey = deviceKey.CreateSubKey("Device Parameters", writable: true);
         using var intMgmtKey = devParamsKey.CreateSubKey("Interrupt Management", writable: true);
         using var msiKey = intMgmtKey.CreateSubKey("MessageSignaledInterruptProperties", writable: true);
@@ -148,7 +157,6 @@ public sealed class WindowsPciDeviceInventory : IMsiDeviceInventory
             msiKey.SetValue("MessageNumberLimit", messageNumberLimit, RegistryValueKind.DWord);
         }
 
-        // Управление Affinity Policy
         using var affinityKey = intMgmtKey.CreateSubKey("Affinity Policy", writable: true);
         if (priority != MsiDevicePriority.Undefined)
         {

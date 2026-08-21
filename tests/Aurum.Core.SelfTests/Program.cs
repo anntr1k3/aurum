@@ -55,6 +55,9 @@ internal static partial class Program
             ("Service revert restores the delayed auto-start flag", ServiceRevertRestoresDelayedAutoStartAsync),
             ("Service disable refuses protected system services", ServiceDisableRejectsProtectedServiceAsync),
             ("Service repair refuses a protected service named by a tampered snapshot", ServiceRepairRejectsProtectedServiceAsync),
+            ("Service disable refuses undeclared names", ServiceDisableRejectsUndeclaredServiceAsync),
+            ("Service repair refuses an undeclared name from a tampered snapshot", ServiceRepairRejectsUndeclaredServiceAsync),
+            ("Service revert refuses to change an undeclared disabled service", ServiceRevertRejectsUndeclaredDisabledServiceAsync),
             ("Service revert of an enabled service only drops tracking", ServiceRevertOfEnabledServiceOnlyDropsTrackingAsync),
             ("Storage tuning snapshots and toggles options", StorageTuningSnapshotsAndTogglesAsync),
             ("Storage tuning requires administrative context", StorageTuningRequiresAdminAsync),
@@ -63,6 +66,9 @@ internal static partial class Program
             ("MSI mode applies gaming preset and reverts cleanly", MsiModeAppliesGamingPresetAndRevertsAsync),
             ("MSI mode requires administrative context", MsiModeRequiresAdminAsync),
             ("MSI revert keeps its snapshot when a device restore fails", MsiRevertKeepsSnapshotOnFailureAsync),
+            ("MSI revert refuses a snapshot id missing from live inventory", MsiRevertRejectsUnknownDeviceIdAsync),
+            ("MSI apply refuses a device marked as not modifiable", MsiApplyRejectsUnmodifiableDeviceAsync),
+            ("MSI device ids reject path traversal and non-PCI names", MsiDeviceIdParseRejectsMalformedAsync),
             ("System timer resolution calculations and conversions are accurate", SystemTimerResolutionCalculationsAsync),
             ("System timer resolution edge values and conversions are accurate", SystemTimerResolutionEdgeValuesAsync),
             ("MSI device category icons and labels are assigned correctly", MsiCategoryIconsAndLabelsAreValidAsync),
@@ -843,6 +849,71 @@ internal static partial class Program
         True(controlStore.StartModeWrites.Count == 0, "A refused repair must not reach the SCM at all.");
     }
 
+    private static async Task ServiceDisableRejectsUndeclaredServiceAsync()
+    {
+        var controlStore = new InMemoryServiceControlStore();
+        var stateRepo = new InMemoryServiceStateRepository();
+        var manager = new ServiceManager(controlStore, stateRepo);
+
+        controlStore.AddService(new ServiceDefinition(
+            "RemoteRegistry", "Remote Registry", "Not in the optional catalog",
+            ServiceRunState.Stopped, ServiceStartMode.Manual, false, 0, []));
+
+        await ThrowsAsync<InvalidOperationException>(() => manager.DisableServiceAsync("RemoteRegistry"));
+
+        Equal(
+            ServiceStartMode.Manual,
+            controlStore.GetService("RemoteRegistry")!.StartMode,
+            "An undeclared service must keep its start mode.");
+        True(controlStore.StartModeWrites.Count == 0, "An undeclared disable must not reach the SCM.");
+        True(await stateRepo.GetAsync("RemoteRegistry") is null, "A refused disable must not leave tracking state behind.");
+    }
+
+    private static async Task ServiceRepairRejectsUndeclaredServiceAsync()
+    {
+        var controlStore = new InMemoryServiceControlStore();
+        var stateRepo = new InMemoryServiceStateRepository();
+        var manager = new ServiceManager(controlStore, stateRepo);
+
+        controlStore.AddService(new ServiceDefinition(
+            "RemoteRegistry", "Remote Registry", "Not in the optional catalog",
+            ServiceRunState.Running, ServiceStartMode.Automatic, false, 0, []));
+
+        await stateRepo.SaveAsync(new PersistedServiceEntry(
+            "RemoteRegistry", ServiceStartMode.Automatic, false, DateTimeOffset.UtcNow));
+
+        await ThrowsAsync<InvalidOperationException>(() => manager.RepairServiceAsync("RemoteRegistry"));
+
+        Equal(
+            ServiceStartMode.Automatic,
+            controlStore.GetService("RemoteRegistry")!.StartMode,
+            "A tampered snapshot must not disable an undeclared service.");
+        True(controlStore.StartModeWrites.Count == 0, "A refused undeclared repair must not reach the SCM.");
+    }
+
+    private static async Task ServiceRevertRejectsUndeclaredDisabledServiceAsync()
+    {
+        var controlStore = new InMemoryServiceControlStore();
+        var stateRepo = new InMemoryServiceStateRepository();
+        var manager = new ServiceManager(controlStore, stateRepo);
+
+        controlStore.AddService(new ServiceDefinition(
+            "RemoteRegistry", "Remote Registry", "Already disabled outside Aurum",
+            ServiceRunState.Stopped, ServiceStartMode.Disabled, false, 0, []));
+
+        await stateRepo.SaveAsync(new PersistedServiceEntry(
+            "RemoteRegistry", ServiceStartMode.Automatic, false, DateTimeOffset.UtcNow));
+
+        await ThrowsAsync<InvalidOperationException>(() => manager.RevertServiceAsync("RemoteRegistry"));
+
+        Equal(
+            ServiceStartMode.Disabled,
+            controlStore.GetService("RemoteRegistry")!.StartMode,
+            "Revert must not enable an undeclared service that happens to be disabled.");
+        True(controlStore.StartModeWrites.Count == 0, "A refused undeclared revert must not reach the SCM.");
+        NotNull(await stateRepo.GetAsync("RemoteRegistry"), "A refused revert must keep the snapshot.");
+    }
+
     /// <summary>
     /// Aurum only ever sets a service to Disabled, so a service that is not disabled has
     /// nothing left to restore. Writing the recorded start mode regardless would make an
@@ -1615,6 +1686,76 @@ internal static partial class Program
 
         var gpu = failingInventory.Devices.First(d => d.DeviceInstanceId == gpuId);
         True(!gpu.IsMsiSupported, "The device that could be restored should have been reverted.");
+    }
+
+    private static async Task MsiRevertRejectsUnknownDeviceIdAsync()
+    {
+        const string gpuId = @"PCI\VEN_10DE&DEV_2484\01";
+        const string unknownId = @"PCI\VEN_DEAD&DEV_BEEF\99";
+
+        var inventory = new InMemoryMsiDeviceInventory
+        {
+            Devices =
+            [
+                new(gpuId, "NVIDIA GeForce RTX 3070", MsiDeviceCategory.Gpu, "PCI bus 1", true, 1, MsiDevicePriority.High, true, true)
+            ]
+        };
+
+        var repo = new InMemoryMsiStateRepository();
+        await repo.WriteAsync(new MsiStateSnapshot(
+            DateTimeOffset.UtcNow,
+            [
+                new MsiDeviceSnapshot(gpuId, false, 1, MsiDevicePriority.Undefined),
+                new MsiDeviceSnapshot(unknownId, false, 1, MsiDevicePriority.Undefined)
+            ]));
+
+        var manager = new MsiModeManager(inventory, repo, () => true);
+        await ThrowsAsync<AggregateException>(() => manager.RevertAsync());
+
+        NotNull(await repo.ReadAsync(), "A revert that cannot match every snapshot id must keep the snapshot.");
+        var gpu = inventory.Devices[0];
+        True(!gpu.IsMsiSupported, "The device present in inventory should still have been restored.");
+        Equal(MsiDevicePriority.Undefined, gpu.Priority, "The live device should restore snapshot priority.");
+    }
+
+    private static async Task MsiApplyRejectsUnmodifiableDeviceAsync()
+    {
+        const string bridgeId = @"PCI\VEN_8086&DEV_7A27\04";
+        var inventory = new InMemoryMsiDeviceInventory
+        {
+            Devices =
+            [
+                new(bridgeId, "PCI-to-PCI Bridge", MsiDeviceCategory.System, "PCI bus 0", false, 1, MsiDevicePriority.Undefined, true, false)
+            ]
+        };
+
+        var repo = new InMemoryMsiStateRepository();
+        var manager = new MsiModeManager(inventory, repo, () => true);
+
+        await ThrowsAsync<InvalidOperationException>(() =>
+            manager.ApplyDeviceMsiAsync(bridgeId, true, MsiDevicePriority.High));
+
+        True(await repo.ReadAsync() is null, "A refused MSI apply must not persist a snapshot.");
+        True(!inventory.Devices[0].IsMsiSupported, "An unmodifiable device must not be written.");
+    }
+
+    private static Task MsiDeviceIdParseRejectsMalformedAsync()
+    {
+        True(MsiDeviceId.TryParse(@"PCI\VEN_10DE&DEV_2484\01", out var hardwareId, out var instanceId),
+            "A well-formed PCI instance id should parse.");
+        Equal("VEN_10DE&DEV_2484", hardwareId, "Hardware id was not split out.");
+        Equal("01", instanceId, "Instance id was not split out.");
+
+        True(!MsiDeviceId.TryParse(@"PCI\..\..\SOFTWARE\AurumProbe", out _, out _),
+            "Parent-directory segments must be rejected.");
+        True(!MsiDeviceId.TryParse(@"USB\VID_1234\05", out _, out _),
+            "Non-PCI instance ids must be rejected.");
+        True(!MsiDeviceId.TryParse(@"PCI\VEN_10DE\01\extra", out _, out _),
+            "Extra path segments must be rejected.");
+        True(!MsiDeviceId.TryParse(@"PCI\VEN_10DE", out _, out _),
+            "A two-segment id must be rejected.");
+
+        return Task.CompletedTask;
     }
 
     private static async Task MsiModeAppliesGamingPresetAndRevertsAsync()

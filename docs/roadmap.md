@@ -114,9 +114,9 @@ Core parking must never be presented as a universally beneficial on/off switch.
 
 **Status:** inventory, dependency analysis, and reversible per-service
 disable/revert/repair are implemented. Presets group optional services by
-capability. Protected names cannot be disabled or repaired from a snapshot.
-Workload-aware batch refusal and live parked-core visualization remain
-future work.
+capability. Only declared optional names can be disabled or written from a
+snapshot; protected names cannot. Workload-aware batch refusal and live
+parked-core visualization remain future work.
 
 - Inventory service state, startup type, dependencies, and dependants.
 - Group optional services by capability rather than publish a universal

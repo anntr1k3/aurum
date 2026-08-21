@@ -132,6 +132,16 @@ public sealed class ServiceManager
         }
     }
 
+    private static void EnsureDeclaredOptional(string serviceName)
+    {
+        EnsureNotProtected(serviceName);
+        if (!ServiceAnalyzer.IsDeclaredOptional(serviceName))
+        {
+            throw new InvalidOperationException(
+                $"Служба '{serviceName}' не входит в объявленный набор опциональных служб Aurum. Её режим запуска не будет изменён по данным снимка.");
+        }
+    }
+
     public async Task<ServiceEvaluation> EvaluateServiceAsync(
         ServiceDefinition service,
         CancellationToken cancellationToken = default)
@@ -159,7 +169,7 @@ public sealed class ServiceManager
 
         try
         {
-            EnsureNotProtected(serviceName);
+            EnsureDeclaredOptional(serviceName);
 
             var service = await _controlStore.GetServiceAsync(serviceName, cancellationToken);
             if (service is null)
@@ -259,6 +269,10 @@ public sealed class ServiceManager
                     $"Снимок службы '{serviceName}' содержит неизвестный режим запуска. Aurum не будет его применять.");
             }
 
+            // The start mode comes from JSON. Even for an already-disabled service, an
+            // edited snapshot must not be enough to change a name the user never selected.
+            EnsureDeclaredOptional(serviceName);
+
             await _controlStore.ChangeStartModeAsync(
                 serviceName,
                 entry.OriginalStartMode,
@@ -299,9 +313,9 @@ public sealed class ServiceManager
             }
 
             // Repair re-disables a service named by the snapshot rather than by the user's
-            // click, so an edited snapshot would otherwise be enough to turn off the
-            // firewall or Defender through an elevated Aurum.
-            EnsureNotProtected(serviceName);
+            // click, so an edited snapshot would otherwise be enough to turn off a
+            // non-protected service the user never selected, or Defender/firewall.
+            EnsureDeclaredOptional(serviceName);
 
             await _controlStore.ChangeStartModeAsync(serviceName, ServiceStartMode.Disabled, null, cancellationToken);
             try
