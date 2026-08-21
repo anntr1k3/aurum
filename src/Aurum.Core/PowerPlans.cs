@@ -140,7 +140,8 @@ public sealed class PowerPlanManager
             throw new InvalidOperationException("The selected power plan is already active.");
         }
 
-        await _store.SetActiveAsync(desiredPlanId, cancellationToken);
+        // Claim the rollback point before touching Windows, so an interrupted apply can
+        // never leave the active plan changed with no record of what it was.
         try
         {
             await _repository.SaveAsync(
@@ -149,13 +150,25 @@ public sealed class PowerPlanManager
         }
         catch (Exception error)
         {
-            var recovered = await TrySetActiveAsync(snapshot.ActivePlanId, cancellationToken);
             throw new PowerPlanTransactionException(
-                recovered
-                    ? "The power plan changed, but its rollback state could not be saved. The original plan was restored."
-                    : "The power plan changed, its rollback state could not be saved, and automatic recovery failed.",
+                "The rollback state could not be saved, so the active power plan was left untouched.",
                 error,
-                recovered);
+                true);
+        }
+
+        try
+        {
+            await _store.SetActiveAsync(desiredPlanId, cancellationToken);
+        }
+        catch (Exception error)
+        {
+            var discarded = await TryRemoveStateAsync(cancellationToken);
+            throw new PowerPlanTransactionException(
+                discarded
+                    ? "The power plan could not be changed. Its rollback state was discarded."
+                    : "The power plan could not be changed and its rollback state could not be discarded, so Aurum still reports the change as tracked.",
+                error,
+                discarded);
         }
     }
 
@@ -201,6 +214,19 @@ public sealed class PowerPlanManager
         if (!snapshot.Plans.Any(plan => plan.Id == planId))
         {
             throw new InvalidOperationException($"Power plan '{planId}' is no longer available in Windows.");
+        }
+    }
+
+    private async Task<bool> TryRemoveStateAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            await _repository.RemoveAsync(cancellationToken);
+            return true;
+        }
+        catch
+        {
+            return false;
         }
     }
 

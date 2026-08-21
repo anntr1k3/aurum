@@ -24,17 +24,21 @@ internal static partial class Program
             ("External changes are reported as drift", ExternalChangeIsReportedAsDriftAsync),
             ("Repair restores desired values without replacing rollback state", RepairPreservesOriginalStateAsync),
             ("Already configured values are not claimed", AlreadyConfiguredIsNotClaimedAsync),
+            ("Rollback snapshot is persisted before the first write", TweakSnapshotIsPersistedBeforeFirstWriteAsync),
+            ("Revert refuses a snapshot naming an undeclared location", TweakRevertRejectsUndeclaredTargetAsync),
             ("Cleanup deletes only unchanged scanned files", CleanupDeletesOnlyUnchangedFilesAsync),
             ("Hardware monitor returns bounded native metrics", HardwareMonitorReturnsBoundedMetricsAsync),
             ("Power plan apply and revert preserve the original plan", PowerPlanApplyAndRevertAsync),
             ("Power plan drift can be detected and repaired", PowerPlanDriftAndRepairAsync),
-            ("Power plan apply rolls back when persistence fails", PowerPlanPersistenceFailureRollsBackAsync),
+            ("Power plan is left untouched when persistence fails", PowerPlanPersistenceFailureLeavesPlanUntouchedAsync),
+            ("Power plan records the original before activating another", PowerPlanStateIsPersistedBeforeActivationAsync),
             ("Windows power plan inventory is readable", WindowsPowerPlanInventoryIsReadableAsync),
             ("Storage maintenance requires explicit administrative context", StorageMaintenanceRequiresAdministratorAsync),
             ("ReTrim rejects rotational media", RetrimRejectsRotationalMediaAsync),
             ("Validated ReTrim passes only the selected volume", ValidatedRetrimUsesSelectedVolumeAsync),
             ("Windows storage inventory is readable", WindowsStorageInventoryIsReadableAsync),
             ("Core parking uses an isolated plan and reverts cleanly", CoreParkingApplyAndRevertAsync),
+            ("Core parking records its plan before activating it", CoreParkingStateIsPersistedBeforeActivationAsync),
             ("Core parking drift can be repaired", CoreParkingDriftAndRepairAsync),
             ("Core parking refuses conflicting tracked power changes", CoreParkingRejectsPowerConflictAsync),
             ("Power plan refuses conflicting tracked core parking", PowerPlanRejectsCoreParkingConflictAsync),
@@ -179,6 +183,62 @@ internal static partial class Program
         True(!store.Contains(SecondTarget), "Repair replaced the missing-value rollback point.");
     }
 
+    private static async Task TweakSnapshotIsPersistedBeforeFirstWriteAsync()
+    {
+        var journal = new List<string>();
+        var store = new InMemorySystemStore { Journal = journal };
+        store.Seed(FirstTarget, RegistryValue.String("original"));
+        var repository = new InMemoryStateRepository { Journal = journal };
+        var engine = new TweakEngine(store, repository);
+
+        await engine.ApplyAsync(CreateDefinition());
+
+        var saveIndex = journal.IndexOf("snapshot-save");
+        var writeIndex = journal.IndexOf("registry-write");
+        True(saveIndex >= 0, "Apply never persisted a rollback snapshot.");
+        True(
+            saveIndex < writeIndex,
+            "The rollback snapshot must reach the repository before the first registry write, otherwise a process kill mid-apply strands the change.");
+    }
+
+    private static async Task TweakRevertRejectsUndeclaredTargetAsync()
+    {
+        var store = new InMemorySystemStore();
+        store.Seed(FirstTarget, RegistryValue.String("original"));
+        var repository = new InMemoryStateRepository();
+        var engine = new TweakEngine(store, repository);
+        var definition = CreateDefinition();
+
+        await engine.ApplyAsync(definition);
+
+        // Stands in for a snapshot file edited by a process running as the user without
+        // elevation. Revert normally runs elevated, so the location it writes must come
+        // from the catalog rather than from the file.
+        var foreignTarget = new RegistryTarget(
+            RegistryHiveId.LocalMachine,
+            @"SYSTEM\CurrentControlSet\Services\NotAnAurumTweak",
+            "ImagePath");
+        var snapshot = await repository.GetAsync(definition.Id)
+            ?? throw new Exception("Apply did not persist a snapshot to tamper with.");
+        var tamperedEntries = snapshot.Entries.ToList();
+        tamperedEntries.Add(new RegistryStateEntry(
+            foreignTarget,
+            new RegistrySnapshot(true, RegistryValue.String("payload"))));
+        await repository.SaveAsync(snapshot with { Entries = tamperedEntries });
+
+        var error = await ThrowsAsync<InvalidOperationException>(() => engine.RevertAsync(definition));
+
+        True(
+            error.Message.Contains(foreignTarget.DisplayPath, StringComparison.Ordinal),
+            $"Revert failed for an unrelated reason instead of rejecting the undeclared location: {error.Message}");
+        True(!store.Contains(foreignTarget), "Revert wrote to a location the tweak never declared.");
+        Equal(
+            RegistryValue.String("changed"),
+            store.Get(FirstTarget),
+            "A rejected revert must not restore anything at all.");
+        NotNull(await repository.GetAsync(definition.Id), "A rejected revert discarded the rollback snapshot.");
+    }
+
     private static TweakDefinition CreateDefinition() => new(
         "tests.transaction",
         "Tests",
@@ -281,7 +341,7 @@ internal static partial class Program
         Equal(originalId, repository.State?.OriginalPlanId, "Repair replaced the original rollback plan.");
     }
 
-    private static async Task PowerPlanPersistenceFailureRollsBackAsync()
+    private static async Task PowerPlanPersistenceFailureLeavesPlanUntouchedAsync()
     {
         var originalId = Guid.NewGuid();
         var desiredId = Guid.NewGuid();
@@ -291,8 +351,27 @@ internal static partial class Program
 
         var error = await ThrowsAsync<PowerPlanTransactionException>(() => manager.ApplyAsync(desiredId));
         True(error.RecoverySucceeded, "Power-plan apply did not report successful recovery.");
-        Equal(originalId, store.ActivePlanId, "Original plan was not restored after persistence failure.");
+        Equal(originalId, store.ActivePlanId, "A failed snapshot save must leave the active plan untouched.");
         True(repository.State is null, "Failed apply left power-plan state behind.");
+    }
+
+    private static async Task PowerPlanStateIsPersistedBeforeActivationAsync()
+    {
+        var originalId = Guid.NewGuid();
+        var desiredId = Guid.NewGuid();
+        var journal = new List<string>();
+        var store = new InMemoryPowerPlanStore(originalId, desiredId) { Journal = journal };
+        var repository = new InMemoryPowerPlanStateRepository { Journal = journal };
+        var manager = new PowerPlanManager(store, repository);
+
+        await manager.ApplyAsync(desiredId);
+
+        var saveIndex = journal.IndexOf("state-save");
+        var activateIndex = journal.IndexOf("plan-activate");
+        True(saveIndex >= 0, "Apply never persisted the rollback state.");
+        True(
+            saveIndex < activateIndex,
+            "The original plan must be recorded before the new one is activated, otherwise an interrupted apply leaves no way back.");
     }
 
     private static async Task WindowsPowerPlanInventoryIsReadableAsync()
@@ -387,6 +466,24 @@ internal static partial class Program
         Equal(originalId, store.ActivePlanId, "Original plan was not restored.");
         True(!await store.ExistsAsync(managedId), "Managed core-parking plan was not deleted.");
         True(repository.State is null, "Core-parking state remained after revert.");
+    }
+
+    private static async Task CoreParkingStateIsPersistedBeforeActivationAsync()
+    {
+        var journal = new List<string>();
+        var store = new InMemoryCoreParkingStore { Journal = journal };
+        var repository = new InMemoryCoreParkingStateRepository { Journal = journal };
+        var manager = new CoreParkingManager(store, repository, new InMemoryPowerPlanStateRepository());
+
+        await manager.ApplyAsync(new CoreParkingSettings(100, 100, 50, 100));
+
+        var saveIndex = journal.IndexOf("state-save");
+        var activateIndex = journal.IndexOf("plan-activate");
+        var writeIndex = journal.IndexOf("plan-write-settings");
+        True(saveIndex >= 0, "Apply never persisted the rollback state.");
+        True(
+            saveIndex < writeIndex && saveIndex < activateIndex,
+            "The managed plan must be recorded before it is populated and activated, otherwise an interrupted apply leaves it active and untracked.");
     }
 
     private static async Task CoreParkingDriftAndRepairAsync()
@@ -846,6 +943,9 @@ internal sealed class InMemorySystemStore : ISystemStore
 
     public int? FailOnWriteNumber { get; init; }
 
+    /// <summary>Shared with a repository fake so tests can assert the order of side effects.</summary>
+    public List<string>? Journal { get; init; }
+
     public void Seed(RegistryTarget target, RegistryValue value) => _values[target] = value;
 
     public bool Contains(RegistryTarget target) => _values.ContainsKey(target);
@@ -868,6 +968,7 @@ internal sealed class InMemorySystemStore : ISystemStore
         CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
+        Journal?.Add("registry-write");
         _writeCount++;
         if (_writeCount == FailOnWriteNumber)
         {
@@ -892,6 +993,9 @@ internal sealed class InMemoryStateRepository : ITweakStateRepository
 {
     private readonly Dictionary<string, PersistedTweakState> _states = new(StringComparer.Ordinal);
 
+    /// <summary>Shared with a system-store fake so tests can assert the order of side effects.</summary>
+    public List<string>? Journal { get; init; }
+
     public Task<PersistedTweakState?> GetAsync(string tweakId, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
@@ -907,6 +1011,7 @@ internal sealed class InMemoryStateRepository : ITweakStateRepository
     public Task SaveAsync(PersistedTweakState state, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
+        Journal?.Add("snapshot-save");
         _states[state.TweakId] = state;
         return Task.CompletedTask;
     }
@@ -935,6 +1040,9 @@ internal sealed class InMemoryPowerPlanStore : IPowerPlanStore
 
     public Guid ActivePlanId { get; set; }
 
+    /// <summary>Shared with a repository fake so tests can assert the order of side effects.</summary>
+    public List<string>? Journal { get; init; }
+
     public Task<PowerPlanSnapshot> CaptureAsync(CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
@@ -944,6 +1052,7 @@ internal sealed class InMemoryPowerPlanStore : IPowerPlanStore
     public Task SetActiveAsync(Guid planId, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
+        Journal?.Add("plan-activate");
         if (!_plans.Any(plan => plan.Id == planId))
         {
             throw new InvalidOperationException("Unknown power plan.");
@@ -959,6 +1068,9 @@ internal sealed class InMemoryPowerPlanStateRepository : IPowerPlanStateReposito
     public PersistedPowerPlanState? State { get; set; }
     public bool FailSave { get; init; }
 
+    /// <summary>Shared with a store fake so tests can assert the order of side effects.</summary>
+    public List<string>? Journal { get; init; }
+
     public Task<PersistedPowerPlanState?> GetAsync(CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
@@ -968,6 +1080,7 @@ internal sealed class InMemoryPowerPlanStateRepository : IPowerPlanStateReposito
     public Task SaveAsync(PersistedPowerPlanState state, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
+        Journal?.Add("state-save");
         if (FailSave)
         {
             throw new IOException("Injected power-plan persistence failure.");
@@ -1027,6 +1140,9 @@ internal sealed class InMemoryCoreParkingStore : ICoreParkingStore
 
     public Guid ActivePlanId { get; private set; }
     public int PlanCount => _plans.Count;
+
+    /// <summary>Shared with a repository fake so tests can assert the order of side effects.</summary>
+    public List<string>? Journal { get; init; }
     public Task<CoreParkingPlan> CaptureActiveAsync(CancellationToken cancellationToken = default) => Task.FromResult(_plans[ActivePlanId]);
     public Task<Guid> DuplicateAsync(Guid sourcePlanId, string newName, CancellationToken cancellationToken = default)
     {
@@ -1037,9 +1153,10 @@ internal sealed class InMemoryCoreParkingStore : ICoreParkingStore
     public Task<CoreParkingSettings> ReadSettingsAsync(Guid planId, CancellationToken cancellationToken = default) => Task.FromResult(_plans[planId].Settings);
     public Task WriteSettingsAsync(Guid planId, CoreParkingSettings settings, CancellationToken cancellationToken = default)
     {
+        Journal?.Add("plan-write-settings");
         _plans[planId] = _plans[planId] with { Settings = settings }; return Task.CompletedTask;
     }
-    public Task SetActiveAsync(Guid planId, CancellationToken cancellationToken = default) { ActivePlanId = planId; return Task.CompletedTask; }
+    public Task SetActiveAsync(Guid planId, CancellationToken cancellationToken = default) { Journal?.Add("plan-activate"); ActivePlanId = planId; return Task.CompletedTask; }
     public Task<bool> ExistsAsync(Guid planId, CancellationToken cancellationToken = default) => Task.FromResult(_plans.ContainsKey(planId));
     public Task DeleteAsync(Guid planId, CancellationToken cancellationToken = default) { _plans.Remove(planId); return Task.CompletedTask; }
 }
@@ -1047,8 +1164,12 @@ internal sealed class InMemoryCoreParkingStore : ICoreParkingStore
 internal sealed class InMemoryCoreParkingStateRepository : ICoreParkingStateRepository
 {
     public PersistedCoreParkingState? State { get; private set; }
+
+    /// <summary>Shared with a store fake so tests can assert the order of side effects.</summary>
+    public List<string>? Journal { get; init; }
+
     public Task<PersistedCoreParkingState?> GetAsync(CancellationToken cancellationToken = default) => Task.FromResult(State);
-    public Task SaveAsync(PersistedCoreParkingState state, CancellationToken cancellationToken = default) { State = state; return Task.CompletedTask; }
+    public Task SaveAsync(PersistedCoreParkingState state, CancellationToken cancellationToken = default) { Journal?.Add("state-save"); State = state; return Task.CompletedTask; }
     public Task RemoveAsync(CancellationToken cancellationToken = default) { State = null; return Task.CompletedTask; }
 }
 

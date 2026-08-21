@@ -109,11 +109,16 @@ public sealed class CoreParkingManager
         try
         {
             managedId = await _store.DuplicateAsync(original.Id, $"Aurum · Core Parking · {original.Name}", cancellationToken);
-            await _store.WriteSettingsAsync(managedId.Value, settings, cancellationToken);
-            await _store.SetActiveAsync(managedId.Value, cancellationToken);
+
+            // Recorded as soon as the managed plan exists and before it is populated or
+            // activated. Saving last would let an interrupted apply leave the Aurum plan
+            // active with nothing on disk pointing back to the original plan.
             await _repository.SaveAsync(
                 new PersistedCoreParkingState(original.Id, original.Name, managedId.Value, settings, DateTimeOffset.UtcNow),
                 cancellationToken);
+
+            await _store.WriteSettingsAsync(managedId.Value, settings, cancellationToken);
+            await _store.SetActiveAsync(managedId.Value, cancellationToken);
         }
         catch
         {
@@ -123,6 +128,7 @@ public sealed class CoreParkingManager
                 await TryDeleteAsync(managedId.Value, cancellationToken);
             }
 
+            await TryRemoveStateAsync(cancellationToken);
             throw;
         }
     }
@@ -170,5 +176,10 @@ public sealed class CoreParkingManager
     private async Task TryDeleteAsync(Guid planId, CancellationToken cancellationToken)
     {
         try { await _store.DeleteAsync(planId, cancellationToken); } catch { }
+    }
+
+    private async Task TryRemoveStateAsync(CancellationToken cancellationToken)
+    {
+        try { await _repository.RemoveAsync(cancellationToken); } catch { }
     }
 }

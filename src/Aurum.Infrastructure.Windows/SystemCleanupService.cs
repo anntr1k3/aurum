@@ -74,6 +74,9 @@ public sealed class SystemCleanupService
             var cutoff = DateTime.UtcNow - category.MinimumAge;
             try
             {
+                // AttributesToSkip applies to directories as well as files, so this also
+                // stops the recursion from following a junction planted inside the root
+                // and enumerating files outside the category.
                 var enumerationOptions = new EnumerationOptions
                 {
                     RecurseSubdirectories = true,
@@ -149,6 +152,12 @@ public sealed class SystemCleanupService
 
             try
             {
+                // Everything scanned here lives in directories the unelevated user can
+                // write, while the delete itself usually runs elevated. Re-reading the
+                // file and requiring size and write time to still match what the scan saw
+                // means a file swapped between scan and delete is skipped rather than
+                // removed, and the reparse-point check keeps a planted link from
+                // redirecting the delete outside the category root.
                 var file = new FileInfo(candidate.FullPath);
                 if (!file.Exists || file.Attributes.HasFlag(FileAttributes.ReparsePoint) ||
                     file.Length != candidate.Length || file.LastWriteTimeUtc != candidate.LastWriteTimeUtc)

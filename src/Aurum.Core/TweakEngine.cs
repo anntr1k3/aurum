@@ -67,15 +67,18 @@ public sealed class TweakEngine
                     $"Tweak '{definition.Id}' is already configured outside Aurum; no original state was claimed.");
             }
 
+            // The snapshot has to reach disk before the first mutation. Once a value is
+            // overwritten its original only exists in this record, so a process kill
+            // between the write and the save would strand the change permanently.
+            var state = new PersistedTweakState(definition.Id, DateTimeOffset.UtcNow, snapshots);
+            await _stateRepository.SaveAsync(state, cancellationToken);
+
             try
             {
                 foreach (var mutation in definition.Mutations)
                 {
                     await _systemStore.WriteRegistryAsync(mutation.Target, mutation.DesiredValue, cancellationToken);
                 }
-
-                var state = new PersistedTweakState(definition.Id, DateTimeOffset.UtcNow, snapshots);
-                await _stateRepository.SaveAsync(state, cancellationToken);
             }
             catch (Exception operationError)
             {
@@ -111,6 +114,8 @@ public sealed class TweakEngine
         {
             var state = await _stateRepository.GetAsync(definition.Id, cancellationToken)
                 ?? throw new InvalidOperationException($"No original state exists for tweak '{definition.Id}'.");
+
+            EnsureSnapshotTargetsAreDeclared(definition, state);
 
             var recoveryErrors = await RestoreEntriesBestEffortAsync(state.Entries, cancellationToken);
             if (recoveryErrors.Count != 0)
@@ -173,6 +178,28 @@ public sealed class TweakEngine
             _gate.Release();
         }
     }
+
+    // Revert is the only path that takes a registry location from persisted state rather
+    // than from the catalog. The snapshot lives in the user's profile and is writable
+    // without elevation, while the revert itself usually runs elevated, so the value is
+    // trusted but the location it is written to is not: it must name something this tweak
+    // declared it would touch.
+    private static void EnsureSnapshotTargetsAreDeclared(TweakDefinition definition, PersistedTweakState state)
+    {
+        foreach (var entry in state.Entries)
+        {
+            if (!definition.Mutations.Any(mutation => IsSameTarget(mutation.Target, entry.Target)))
+            {
+                throw new InvalidOperationException(
+                    $"The rollback snapshot for '{definition.Id}' names '{entry.Target.DisplayPath}', which this tweak does not manage. Aurum will not write it.");
+            }
+        }
+    }
+
+    private static bool IsSameTarget(RegistryTarget left, RegistryTarget right) =>
+        left.Hive == right.Hive &&
+        string.Equals(left.SubKey, right.SubKey, StringComparison.OrdinalIgnoreCase) &&
+        string.Equals(left.ValueName, right.ValueName, StringComparison.OrdinalIgnoreCase);
 
     private async Task<List<Exception>> RestoreEntriesBestEffortAsync(
         IReadOnlyList<RegistryStateEntry> entries,
