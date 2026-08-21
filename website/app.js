@@ -96,47 +96,10 @@ function selectFeature(key) {
 
 featureTabs.forEach((tab) => tab.addEventListener("click", () => selectFeature(tab.dataset.feature)));
 
-const detailsToggle = document.querySelector(".detail-toggle");
-const mockDetails = document.querySelector("#mock-details");
-detailsToggle?.addEventListener("click", () => {
-  const expanded = detailsToggle.getAttribute("aria-expanded") === "true";
-  detailsToggle.setAttribute("aria-expanded", String(!expanded));
-  detailsToggle.firstChild.textContent = expanded ? "Показать детали " : "Скрыть детали ";
-  mockDetails.hidden = expanded;
-});
-
-const checkButton = document.querySelector("[data-check-button]");
-checkButton?.addEventListener("click", () => {
-  if (checkButton.classList.contains("is-checking")) return;
-  checkButton.classList.add("is-checking");
-  checkButton.querySelector("span").textContent = "Проверяем…";
-  window.setTimeout(() => {
-    checkButton.classList.remove("is-checking");
-    checkButton.querySelector("span").textContent = "Проверка завершена";
-  }, 850);
-});
-
-const applyButton = document.querySelector("[data-apply-button]");
-applyButton?.addEventListener("click", () => {
-  applyButton.classList.toggle("is-applied");
-  applyButton.querySelector("span").textContent = applyButton.classList.contains("is-applied") ? "Применено" : "Применить";
-});
-
 const repositoryUrl = document.documentElement.dataset.repositoryUrl;
 if (repositoryUrl) {
   document.querySelectorAll(".source-link").forEach((link) => link.setAttribute("href", repositoryUrl));
 }
-
-const scanButton = document.querySelector("[data-scan-button]");
-scanButton?.addEventListener("click", () => {
-  if (scanButton.classList.contains("is-scanning")) return;
-  scanButton.classList.add("is-scanning");
-  scanButton.querySelector("span").textContent = "Проверяем логику…";
-  window.setTimeout(() => {
-    scanButton.classList.remove("is-scanning");
-    scanButton.querySelector("span").textContent = "Система проверена";
-  }, 950);
-});
 
 const header = document.querySelector("[data-header]");
 let scrollFrame = 0;

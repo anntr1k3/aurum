@@ -1,12 +1,28 @@
 <!doctype html>
-<html lang="ru" data-repository-url="../">
+<html lang="ru" data-repository-url="https://github.com/anntr1k3/Aurum">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#090d12">
   <meta name="description" content="Aurum — понятные, проверяемые и обратимые настройки Windows без экспериментальных методов и обещаний волшебного FPS.">
   <title>Aurum — производительность без мифов</title>
-  <link rel="icon" href="data:,">
+  <link rel="canonical" href="https://anntr1k3.github.io/Aurum/">
+  <link rel="icon" type="image/png" href="./icon.png">
+  <link rel="apple-touch-icon" href="./icon.png">
+
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Aurum">
+  <meta property="og:locale" content="ru_RU">
+  <meta property="og:url" content="https://anntr1k3.github.io/Aurum/">
+  <meta property="og:title" content="Aurum — производительность без мифов">
+  <meta property="og:description" content="Понятные, проверяемые и обратимые настройки Windows. Каждое изменение записывает точку откака до применения.">
+  <meta property="og:image" content="https://anntr1k3.github.io/Aurum/icon.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Aurum — производительность без мифов">
+  <meta name="twitter:description" content="Понятные, проверяемые и обратимые настройки Windows. Каждое изменение записывает точку откака до применения.">
+  <meta name="twitter:image" content="https://anntr1k3.github.io/Aurum/icon.png">
+
+  <link rel="preload" href="./fonts/Unbounded-Variable.ttf" as="font" type="font/ttf" crossorigin>
   <link rel="stylesheet" href="./styles.css">
   <script src="./app.js" defer></script>
 </head>
@@ -28,7 +44,7 @@
         <a href="#development">Разработка</a>
       </nav>
 
-      <a class="button button-outline header-action source-link" href="../">
+      <a class="button button-outline header-action source-link" href="https://github.com/anntr1k3/Aurum">
         <svg aria-hidden="true" viewBox="0 0 24 24"><path d="m8 8-4 4 4 4M16 8l4 4-4 4M14 4l-4 16"/></svg>
         Исходный код
       </a>
@@ -59,9 +75,10 @@
         </div>
 
         <div class="performance-stage" data-reveal>
-          <div class="performance-glass" aria-label="Ключевые факторы производительности">
+          <figure class="performance-glass" role="group" aria-labelledby="preview-title">
             <div class="performance-head">
-              <h2>Практический максимум</h2>
+              <p class="preview-badge">Предпросмотр интерфейса</p>
+              <h2 id="preview-title">Практический максимум</h2>
               <p>Сначала логика. Затем изменение.</p>
             </div>
             <div class="performance-list">
@@ -86,12 +103,12 @@
                 <span class="row-check"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="m6 12 4 4 8-9"/></svg></span>
               </div>
             </div>
-            <button class="performance-action" type="button" data-scan-button>
-              <svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="10" cy="10" r="6"/><path d="m15 15 5 5M7 10h6M10 7v6"/></svg>
+            <p class="performance-action" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><circle cx="10" cy="10" r="6"/><path d="m15 15 5 5M7 10h6M10 7v6"/></svg>
               <span>Проверить систему</span>
-            </button>
-            <p class="performance-foot"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M7 11V8a5 5 0 0 1 10 0v3M5 11h14v10H5V11Z"/></svg> Никаких экспериментальных методов</p>
-          </div>
+            </p>
+            <figcaption class="performance-foot"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M7 11V8a5 5 0 0 1 10 0v3M5 11h14v10H5V11Z"/></svg> Проверка выполняется в приложении, не на этой странице</figcaption>
+          </figure>
         </div>
       </div>
     </section>
@@ -213,7 +230,7 @@
             <div><h3>Без телеметрии</h3><p>Данные о системе остаются на вашем компьютере.</p></div>
           </article>
         </div>
-        <a class="text-link" href="../SECURITY.md">Подробнее о принципах <span aria-hidden="true">→</span></a>
+        <a class="text-link" href="https://github.com/anntr1k3/Aurum/blob/main/SECURITY.md">Подробнее о принципах <span aria-hidden="true">→</span></a>
       </div>
     </section>
 
@@ -238,11 +255,11 @@
           <h2 id="development-title">Aurum развивается открыто.</h2>
           <p>Проект находится на стадии раннего MVP. Исходный код, архитектурные решения и планы доступны для проверки.</p>
           <div class="development-actions">
-            <a class="button button-primary source-link" href="../">
+            <a class="button button-primary source-link" href="https://github.com/anntr1k3/Aurum">
               <svg aria-hidden="true" viewBox="0 0 24 24"><path d="m8 8-4 4 4 4M16 8l4 4-4 4M14 4l-4 16"/></svg>
               Посмотреть исходный код
             </a>
-            <a class="button button-outline" href="../docs/roadmap.md">
+            <a class="button button-outline" href="https://github.com/anntr1k3/Aurum/blob/main/docs/roadmap.md">
               <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 5c3-2 5-2 8 0v14c-3-2-5-2-8 0V5Zm8 0c3-2 5-2 8 0v14c-3-2-5-2-8 0V5Z"/></svg>
               Изучить roadmap
             </a>
@@ -274,9 +291,9 @@
     <div class="shell footer-grid">
       <div><a class="brand footer-brand" href="#top">AURUM</a><p>Прозрачные и обратимые настройки Windows.</p></div>
       <nav aria-label="Дополнительная навигация">
-        <a href="../README.md">Документация</a>
-        <a href="../SECURITY.md">Безопасность</a>
-        <a href="../LICENSE">Лицензия</a>
+        <a href="https://github.com/anntr1k3/Aurum/blob/main/README.md">Документация</a>
+        <a href="https://github.com/anntr1k3/Aurum/blob/main/SECURITY.md">Безопасность</a>
+        <a href="https://github.com/anntr1k3/Aurum/blob/main/LICENSE">Лицензия</a>
       </nav>
       <p class="disclaimer">Не связан с Microsoft или AtlasOS.</p>
     </div>
