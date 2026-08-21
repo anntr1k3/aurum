@@ -67,7 +67,9 @@ internal static partial class Program
             ("System timer resolution edge values and conversions are accurate", SystemTimerResolutionEdgeValuesAsync),
             ("MSI device category icons and labels are assigned correctly", MsiCategoryIconsAndLabelsAreValidAsync),
             ("All UI referenced tweak IDs exist in BuiltInTweakCatalog", AllReferencedTweakIdsExistInCatalogAsync),
-            ("Windows PCI device inventory is readable", WindowsPciInventoryIsReadableAsync)
+            ("Windows PCI device inventory is readable", WindowsPciInventoryIsReadableAsync),
+            ("Tweak engine records apply, revert and failed writes in the audit journal", TweakEngineWritesAuditJournalAsync),
+            ("JSONL audit journal round-trips newest entries first", JsonlAuditJournalRoundTripsAsync)
         };
 
         var failures = 0;
@@ -1117,6 +1119,26 @@ internal sealed class InMemoryStateRepository : ITweakStateRepository
     }
 }
 
+internal sealed class InMemoryAuditJournal : IAuditJournal
+{
+    public List<AuditEntry> Entries { get; } = [];
+
+    public Task AppendAsync(AuditEntry entry, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(entry);
+        cancellationToken.ThrowIfCancellationRequested();
+        Entries.Add(entry);
+        return Task.CompletedTask;
+    }
+
+    public Task<IReadOnlyList<AuditEntry>> ReadRecentAsync(int count, CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        return Task.FromResult<IReadOnlyList<AuditEntry>>(
+            Entries.AsEnumerable().Reverse().Take(count).ToArray());
+    }
+}
+
 internal sealed class InMemoryPowerPlanStore : IPowerPlanStore
 {
     private readonly IReadOnlyList<PowerPlanInfo> _plans;
@@ -1756,6 +1778,70 @@ internal static partial class Program
         }
 
         return Task.CompletedTask;
+    }
+
+    private static async Task TweakEngineWritesAuditJournalAsync()
+    {
+        var store = new InMemorySystemStore();
+        store.Seed(FirstTarget, RegistryValue.String("original"));
+        var repository = new InMemoryStateRepository();
+        var journal = new InMemoryAuditJournal();
+        var engine = new TweakEngine(store, repository, journal);
+        var definition = CreateDefinition();
+
+        await engine.ApplyAsync(definition);
+        await engine.RevertAsync(definition);
+
+        Equal(2, journal.Entries.Count, "Apply and revert should each write one audit entry.");
+        Equal(AuditAction.Applied, journal.Entries[0].Action, "First entry should be apply.");
+        True(journal.Entries[0].Succeeded, "Successful apply was recorded as a failure.");
+        Equal(AuditAction.Reverted, journal.Entries[1].Action, "Second entry should be revert.");
+
+        var failingStore = new InMemorySystemStore { FailOnWriteNumber = 2 };
+        failingStore.Seed(FirstTarget, RegistryValue.String("original"));
+        var failingEngine = new TweakEngine(failingStore, new InMemoryStateRepository(), journal);
+        await ThrowsAsync<TweakTransactionException>(() => failingEngine.ApplyAsync(definition));
+        Equal(AuditAction.Failed, journal.Entries[^1].Action, "Failed apply was not recorded.");
+        True(!journal.Entries[^1].Succeeded, "Failed apply was recorded as success.");
+    }
+
+    private static async Task JsonlAuditJournalRoundTripsAsync()
+    {
+        var path = Path.Combine(Path.GetTempPath(), "AurumTests", $"audit-{Guid.NewGuid():N}.jsonl");
+        try
+        {
+            var journal = new JsonlAuditJournal(path);
+            await journal.AppendAsync(new AuditEntry(
+                DateTimeOffset.UtcNow.AddMinutes(-1),
+                "tweak",
+                "older",
+                AuditAction.Applied,
+                true,
+                "first"));
+            await journal.AppendAsync(new AuditEntry(
+                DateTimeOffset.UtcNow,
+                "tweak",
+                "newer",
+                AuditAction.Reverted,
+                true,
+                "second"));
+
+            var recent = await journal.ReadRecentAsync(1);
+            Equal(1, recent.Count, "ReadRecentAsync did not honor the count.");
+            Equal("newer", recent[0].Subject, "Newest entry should be returned first.");
+
+            var both = await journal.ReadRecentAsync(10);
+            Equal(2, both.Count, "Both appended entries should be readable.");
+            Equal("newer", both[0].Subject, "Descending order was lost.");
+            Equal("older", both[1].Subject, "Older entry should follow.");
+        }
+        finally
+        {
+            if (File.Exists(path))
+            {
+                File.Delete(path);
+            }
+        }
     }
 }
 

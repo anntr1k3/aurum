@@ -4,12 +4,17 @@ public sealed class TweakEngine
 {
     private readonly ISystemStore _systemStore;
     private readonly ITweakStateRepository _stateRepository;
+    private readonly IAuditJournal? _auditJournal;
     private readonly SemaphoreSlim _gate = new(1, 1);
 
-    public TweakEngine(ISystemStore systemStore, ITweakStateRepository stateRepository)
+    public TweakEngine(
+        ISystemStore systemStore,
+        ITweakStateRepository stateRepository,
+        IAuditJournal? auditJournal = null)
     {
         _systemStore = systemStore ?? throw new ArgumentNullException(nameof(systemStore));
         _stateRepository = stateRepository ?? throw new ArgumentNullException(nameof(stateRepository));
+        _auditJournal = auditJournal;
     }
 
     public async Task<TweakEvaluation> EvaluateAsync(
@@ -79,6 +84,14 @@ public sealed class TweakEngine
                 {
                     await _systemStore.WriteRegistryAsync(mutation.Target, mutation.DesiredValue, cancellationToken);
                 }
+
+                await RecordAsync(
+                    definition.Id,
+                    definition.Name,
+                    AuditAction.Applied,
+                    succeeded: true,
+                    $"Записано значений: {definition.Mutations.Count}.",
+                    cancellationToken);
             }
             catch (Exception operationError)
             {
@@ -92,6 +105,14 @@ public sealed class TweakEngine
                 {
                     recoveryErrors.Add(recoveryError);
                 }
+
+                await RecordAsync(
+                    definition.Id,
+                    definition.Name,
+                    AuditAction.Failed,
+                    succeeded: false,
+                    operationError.Message,
+                    CancellationToken.None);
 
                 throw new TweakTransactionException(
                     $"Не удалось применить твик '{definition.Id}'. Aurum попытался восстановить исходное состояние.",
@@ -120,6 +141,14 @@ public sealed class TweakEngine
             var recoveryErrors = await RestoreEntriesBestEffortAsync(state.Entries, cancellationToken);
             if (recoveryErrors.Count != 0)
             {
+                await RecordAsync(
+                    definition.Id,
+                    definition.Name,
+                    AuditAction.Failed,
+                    succeeded: false,
+                    recoveryErrors[0].Message,
+                    CancellationToken.None);
+
                 throw new TweakTransactionException(
                     $"Откат твика '{definition.Id}' выполнен не полностью. Снимок для восстановления сохранён.",
                     recoveryErrors[0],
@@ -127,6 +156,13 @@ public sealed class TweakEngine
             }
 
             await _stateRepository.RemoveAsync(definition.Id, cancellationToken);
+            await RecordAsync(
+                definition.Id,
+                definition.Name,
+                AuditAction.Reverted,
+                succeeded: true,
+                "Исходные значения восстановлены.",
+                cancellationToken);
         }
         finally
         {
@@ -159,10 +195,25 @@ public sealed class TweakEngine
                 {
                     await _systemStore.WriteRegistryAsync(mutation.Target, mutation.DesiredValue, cancellationToken);
                 }
+
+                await RecordAsync(
+                    definition.Id,
+                    definition.Name,
+                    AuditAction.Repaired,
+                    succeeded: true,
+                    "Значения снова приведены к желаемым. Снимок отката не менялся.",
+                    cancellationToken);
             }
             catch (Exception operationError)
             {
                 var recoveryErrors = await RestoreEntriesBestEffortAsync(currentValues, CancellationToken.None);
+                await RecordAsync(
+                    definition.Id,
+                    definition.Name,
+                    AuditAction.Failed,
+                    succeeded: false,
+                    operationError.Message,
+                    CancellationToken.None);
                 throw new TweakTransactionException(
                     $"Не удалось восстановить твик '{definition.Id}'. Aurum попытался вернуть состояние до восстановления.",
                     operationError,
@@ -231,5 +282,36 @@ public sealed class TweakEngine
         }
 
         return errors;
+    }
+
+    private async Task RecordAsync(
+        string subjectId,
+        string subjectName,
+        AuditAction action,
+        bool succeeded,
+        string detail,
+        CancellationToken cancellationToken)
+    {
+        if (_auditJournal is null)
+        {
+            return;
+        }
+
+        try
+        {
+            await _auditJournal.AppendAsync(
+                new AuditEntry(
+                    DateTimeOffset.UtcNow,
+                    "tweak",
+                    $"{subjectName} ({subjectId})",
+                    action,
+                    succeeded,
+                    detail),
+                cancellationToken);
+        }
+        catch
+        {
+            // The journal must not fail a registry transaction.
+        }
     }
 }

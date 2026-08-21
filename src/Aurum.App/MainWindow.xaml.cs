@@ -15,7 +15,8 @@ public partial class MainWindow : Window
 
         var registryStore = new WindowsRegistryStore();
         var stateRepository = new JsonTweakStateRepository();
-        var engine = new TweakEngine(registryStore, stateRepository);
+        var auditJournal = new JsonlAuditJournal();
+        var engine = new TweakEngine(registryStore, stateRepository, auditJournal);
         var systemProbe = new WindowsSystemProbe();
         var powerPlanStateRepository = new JsonPowerPlanStateRepository();
         var coreParkingStateRepository = new JsonCoreParkingStateRepository();
@@ -64,6 +65,7 @@ public partial class MainWindow : Window
                 new JsonMsiStateRepository(),
                 () => systemProbe.Capture().IsAdministrator),
             new WindowsSystemTimerService(),
+            auditJournal,
             message => MessageBox.Show(
                 this,
                 message,

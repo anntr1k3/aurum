@@ -15,6 +15,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     private readonly WindowsSystemProbe _systemProbe;
     private readonly AtlasHealthService _atlasHealthService;
     private readonly SystemCleanupService _cleanupService;
+    private readonly IAuditJournal _auditJournal;
     private readonly Func<string, bool> _confirm;
     private string _statusMessage = "Подготовка безопасного снимка системы…";
     private string _lastCheckLabel = "Ещё не проверялось";
@@ -41,12 +42,15 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         NetworkTuningManager networkTuningManager,
         MsiModeManager msiModeManager,
         ISystemTimerService systemTimerService,
+        IAuditJournal auditJournal,
         Func<string, bool> confirm)
     {
         _systemProbe = systemProbe;
         _atlasHealthService = atlasHealthService;
         _cleanupService = cleanupService;
+        _auditJournal = auditJournal ?? throw new ArgumentNullException(nameof(auditJournal));
         _confirm = confirm;
+        AuditEntries = [];
 
         Tweaks = new ObservableCollection<TweakItemViewModel>(BuiltInTweakCatalog.All.Select(
             definition => new TweakItemViewModel(definition, engine, ReportStatus)));
@@ -272,6 +276,15 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     {
         get => _selectedSimpleCategory;
         private set => SetProperty(ref _selectedSimpleCategory, value);
+    }
+
+    public ObservableCollection<AuditEntry> AuditEntries { get; }
+
+    private bool _hasAuditEntries;
+    public bool HasAuditEntries
+    {
+        get => _hasAuditEntries;
+        private set => SetProperty(ref _hasAuditEntries, value);
     }
 
     public ObservableCollection<TweakItemViewModel> Tweaks { get; }
@@ -548,6 +561,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                 CheckAtlasInternalAsync());
 
             SyncSimpleFeatures();
+            await ReloadAuditAsync();
             ReportStatus(
                 $"Проверка завершена. {TweakHealthLabel}. Очистка запускается только вручную.",
                 DriftedTweakCount != 0);
@@ -790,6 +804,39 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     {
         StatusMessage = message;
         HasError = isError;
+        _ = ReloadAuditAsync();
+    }
+
+    private async Task ReloadAuditAsync()
+    {
+        try
+        {
+            var entries = await _auditJournal.ReadRecentAsync(12);
+            void Apply()
+            {
+                AuditEntries.Clear();
+                foreach (var entry in entries)
+                {
+                    AuditEntries.Add(entry);
+                }
+
+                HasAuditEntries = AuditEntries.Count > 0;
+            }
+
+            var dispatcher = Application.Current?.Dispatcher;
+            if (dispatcher is null || dispatcher.CheckAccess())
+            {
+                Apply();
+            }
+            else
+            {
+                dispatcher.Invoke(Apply);
+            }
+        }
+        catch
+        {
+            // The journal is diagnostic; a read failure must not hide the last operation result.
+        }
     }
 
     private void RestartAsAdministrator()

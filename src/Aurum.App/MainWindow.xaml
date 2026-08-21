@@ -2425,7 +2425,12 @@
                     BorderThickness="1"
                     CornerRadius="8"
                     Padding="13,10">
-                <StackPanel Orientation="Horizontal">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <StackPanel Orientation="Horizontal">
                     <TextBlock Text="●" FontSize="9" VerticalAlignment="Center">
                         <TextBlock.Style>
                             <Style TargetType="TextBlock">
@@ -2441,7 +2446,52 @@
                                Foreground="{StaticResource SecondaryTextBrush}"
                                FontSize="11"
                                TextTrimming="CharacterEllipsis" />
-                </StackPanel>
+                    </StackPanel>
+                    <ItemsControl Grid.Row="1"
+                                  Margin="0,8,0,0"
+                                  ItemsSource="{Binding AuditEntries}">
+                        <ItemsControl.Style>
+                            <Style TargetType="ItemsControl">
+                                <Setter Property="Visibility" Value="Visible" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding HasAuditEntries}" Value="False">
+                                        <Setter Property="Visibility" Value="Collapsed" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </ItemsControl.Style>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Grid Margin="0,2,0,0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="56" />
+                                        <ColumnDefinition Width="88" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="{Binding TimeLabel}" Foreground="{StaticResource MutedBrush}" FontSize="10" />
+                                    <TextBlock Grid.Column="1" Text="{Binding ActionLabel}" FontSize="10" FontWeight="SemiBold">
+                                        <TextBlock.Style>
+                                            <Style TargetType="TextBlock">
+                                                <Setter Property="Foreground" Value="{StaticResource AccentBrush}" />
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding Succeeded}" Value="False">
+                                                        <Setter Property="Foreground" Value="{StaticResource ErrorBrush}" />
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </TextBlock.Style>
+                                    </TextBlock>
+                                    <TextBlock Grid.Column="2"
+                                               Text="{Binding Subject}"
+                                               ToolTip="{Binding Detail}"
+                                               TextTrimming="CharacterEllipsis"
+                                               Foreground="{StaticResource SecondaryTextBrush}"
+                                               FontSize="10" />
+                                </Grid>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </Grid>
             </Border>
         </Grid>
     </Grid>
