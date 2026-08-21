@@ -11,3 +11,4 @@ artifacts/
 *.pfx
 *.snk
 *.pdb
+dist/
