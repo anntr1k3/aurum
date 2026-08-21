@@ -1,4 +1,4 @@
-# Aurum — Open-Source AtlasOS Companion (v1.0.0)
+# Aurum — Open-Source AtlasOS Companion (v1.0.1)
 
 [![Build Status](https://github.com/anntr1k3/aurum/actions/workflows/build.yml/badge.svg)](https://github.com/anntr1k3/aurum/actions/workflows/build.yml)
 [![GitHub Pages](https://github.com/anntr1k3/aurum/actions/workflows/pages.yml/badge.svg)](https://anntr1k3.github.io/aurum/)
@@ -6,7 +6,7 @@
 [![Platform: Windows 10/11](https://img.shields.io/badge/Platform-Windows%2010%20%2F%2011%20x64-0078D6.svg)](https://github.com/anntr1k3/aurum)
 [![.NET 8.0](https://img.shields.io/badge/.NET-8.0%20(C%23%2012)-512BD4.svg)](https://dotnet.microsoft.com/)
 
-[ 🇷🇺 **Русская версия (README.md)** ](README.md) | [ 🌐 **Web Landing Page** ](https://anntr1k3.github.io/aurum/)
+[ 🇷🇺 **Русская версия (README.md)** ](README.md) | [ 🌐 **Web Landing Page** ](https://anntr1k3.github.io/aurum/) | [ ⬇ **Download** ](https://github.com/anntr1k3/aurum/releases/latest)
 
 ---
 

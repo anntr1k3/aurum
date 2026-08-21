@@ -1,4 +1,4 @@
-# Aurum — Open-Source AtlasOS Companion (v1.0.0)
+# Aurum — Open-Source AtlasOS Companion (v1.0.1)
 
 Aurum is a modern, transparent, auditable, and fully reversible Windows companion designed specifically for **AtlasOS** and clean Windows optimization.
 
@@ -8,6 +8,8 @@ Instead of opaque "magic" scripts or destructive tweaks, Aurum adheres to a stri
 - **Full Reversibility & Drift Detection:** Every modification captures the original pre-Aurum state in `%LOCALAPPDATA%\Aurum\` snapshots and can be restored or repaired at any time.
 - **Nordic Blue Design:** Clean, distraction-free modern UI with **Unbounded** & **Onest** typography.
 - **Zero Telemetry:** Completely offline, no background telemetry, and no remote script execution.
+
+The current Windows x64 build is on [GitHub Releases](https://github.com/anntr1k3/aurum/releases/latest): a single `Aurum.exe`, no installer.
 
 ---
 
