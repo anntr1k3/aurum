@@ -1,0 +1,36 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Aurum.Core", "src\Aurum.Core\Aurum.Core.csproj", "{FD80A323-95EC-497C-B4C0-C552062A1D2D}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Aurum.Infrastructure.Windows", "src\Aurum.Infrastructure.Windows\Aurum.Infrastructure.Windows.csproj", "{7E5F9D21-9A25-4E1F-A559-790CFBBF162E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Aurum.App", "src\Aurum.App\Aurum.App.csproj", "{44478716-CF87-45DA-A217-8F329805FF46}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Aurum.Core.SelfTests", "tests\Aurum.Core.SelfTests\Aurum.Core.SelfTests.csproj", "{0243C43B-8B2B-4875-975B-0B5251FEC54E}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{FD80A323-95EC-497C-B4C0-C552062A1D2D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FD80A323-95EC-497C-B4C0-C552062A1D2D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FD80A323-95EC-497C-B4C0-C552062A1D2D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FD80A323-95EC-497C-B4C0-C552062A1D2D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7E5F9D21-9A25-4E1F-A559-790CFBBF162E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7E5F9D21-9A25-4E1F-A559-790CFBBF162E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7E5F9D21-9A25-4E1F-A559-790CFBBF162E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7E5F9D21-9A25-4E1F-A559-790CFBBF162E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{44478716-CF87-45DA-A217-8F329805FF46}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{44478716-CF87-45DA-A217-8F329805FF46}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{44478716-CF87-45DA-A217-8F329805FF46}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{44478716-CF87-45DA-A217-8F329805FF46}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0243C43B-8B2B-4875-975B-0B5251FEC54E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0243C43B-8B2B-4875-975B-0B5251FEC54E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0243C43B-8B2B-4875-975B-0B5251FEC54E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0243C43B-8B2B-4875-975B-0B5251FEC54E}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal

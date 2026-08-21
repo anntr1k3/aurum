@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <RootNamespace>Aurum.Infrastructure.Windows</RootNamespace>
+    <AssemblyName>Aurum.Infrastructure.Windows</AssemblyName>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Aurum.Core\Aurum.Core.csproj" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,13 @@
+bin/
+obj/
+.vs/
+.idea/
+*.user
+*.suo
+TestResults/
+artifacts/
+.dotnet/
+.dotnet-install.ps1
+*.pfx
+*.snk
+*.pdb

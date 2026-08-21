@@ -1,0 +1,644 @@
+<!doctype html>
+<html lang="ru" data-repository-url="../">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#070b10">
+  <meta name="description" content="Aurum — прозрачная, проверяемая и 100% обратимая оптимизация Windows для AtlasOS и киберспорта. 0% телеметрии, 38 тестов ядра, единый exe-файл.">
+  <title>Aurum — производительность без мифов | AtlasOS Companion</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="./styles.css">
+  <script src="./app.js" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">К содержанию</a>
+
+  <!-- Header with Frosted Glass -->
+  <header class="site-header" data-header>
+    <div class="shell header-inner">
+      <a class="brand" href="#top" aria-label="Aurum — на главную">AURUM</a>
+
+      <button class="menu-button" type="button" aria-expanded="false" aria-controls="site-navigation">
+        <span class="sr-only">Открыть меню</span>
+        <span></span><span></span>
+      </button>
+
+      <nav class="site-nav" id="site-navigation" aria-label="Основная навигация">
+        <a href="#practical">Что работает</a>
+        <a href="#features">Возможности</a>
+        <a href="#modes">Simple / Pro</a>
+        <a href="#faq">FAQ</a>
+        <a href="#specs">Скачать</a>
+        <a href="#development">Разработка</a>
+      </nav>
+
+      <a class="button button-outline header-action source-link" href="../">
+        <svg aria-hidden="true" viewBox="0 0 24 24"><path d="m8 8-4 4 4 4M16 8l4 4-4 4M14 4l-4 16"/></svg>
+        Репозиторий
+      </a>
+    </div>
+  </header>
+
+  <main id="main">
+    <!-- Hero Section with Liquid Glass -->
+    <section class="hero" id="top" aria-labelledby="hero-title">
+      <div class="ambient-blobs" aria-hidden="true">
+        <div class="ambient-blob blob-hero-1"></div>
+        <div class="ambient-blob blob-hero-2"></div>
+        <div class="ambient-blob blob-hero-3"></div>
+      </div>
+
+      <div class="shell hero-grid">
+        <div class="hero-copy" data-reveal>
+          <span class="hero-tag">Windows 10 / 11 Companion · v1.0.0</span>
+          <h1 id="hero-title">Производительность<br>без мифов.</h1>
+          <div class="signal-line" aria-hidden="true"><span></span></div>
+          <p>Aurum собирает в одном месте понятные, проверяемые и 100% обратимые настройки Windows. Без скрытых скриптов, плацебо-твиков и вмешательства в ядро.</p>
+          <div class="hero-actions">
+            <a class="button button-primary" href="../dist/Aurum.exe" download>
+              <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 3v13m0 0 4-4m-4 4-4-4M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
+              Скачать Aurum.exe
+            </a>
+            <a class="button button-outline" href="#features">
+              <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M3 12h3l2-6 4 12 3-9 2 3h4"/></svg>
+              Что работает
+            </a>
+            <a class="button button-outline" href="#myths">
+              <svg aria-hidden="true" viewBox="0 0 24 24"><path d="m12 3 8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6l8-3Zm-4 9 2.5 2.5L16 9"/></svg>
+              Без «секретов»
+            </a>
+          </div>
+          <div class="hero-badges">
+            <span><svg aria-hidden="true" viewBox="0 0 24 24"><path d="m6 12 4 4 8-9"/></svg> Windows 10 / 11 x64</span>
+            <span><svg aria-hidden="true" viewBox="0 0 24 24"><path d="m6 12 4 4 8-9"/></svg> Single-File Portable</span>
+            <span><svg aria-hidden="true" viewBox="0 0 24 24"><path d="m6 12 4 4 8-9"/></svg> 100% Точный откат</span>
+            <span><svg aria-hidden="true" viewBox="0 0 24 24"><path d="m6 12 4 4 8-9"/></svg> 0% Телеметрии</span>
+          </div>
+        </div>
+
+        <div class="performance-stage" data-reveal>
+          <div class="performance-glass liquid-glass" aria-label="Ключевые факторы производительности">
+            <div class="glass-reflection"></div>
+            <div class="performance-head">
+              <h2>Практический максимум</h2>
+              <p>Сначала логика и снимок состояния. Затем изменение.</p>
+            </div>
+            <div class="performance-list">
+              <div class="performance-row">
+                <span class="performance-icon"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8Zm0-5v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"/></svg></span>
+                <div><strong>Драйверы и прерывания MSI</strong><small>GPU & 2.5GbE High Priority</small></div>
+                <span class="row-check"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="m6 12 4 4 8-9"/></svg></span>
+              </div>
+              <div class="performance-row">
+                <span class="performance-icon"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M10 14.5V5a2 2 0 1 1 4 0v9.5a4 4 0 1 1-4 0ZM12 8v8"/></svg></span>
+                <div><strong>Таймер 0.500 мс и Core Parking</strong><small>2000 Гц опрос, 100% активных ядер</small></div>
+                <span class="row-check"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="m6 12 4 4 8-9"/></svg></span>
+              </div>
+              <div class="performance-row">
+                <span class="performance-icon"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M3 13h4l2-6 4 11 3-8 2 3h3"/></svg></span>
+                <div><strong>Защита SSD & Очистка диска</strong><small>NTFS 8.3, LastAccess, ReTrim, -8...32GB</small></div>
+                <span class="row-check"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="m6 12 4 4 8-9"/></svg></span>
+              </div>
+              <div class="performance-row">
+                <span class="performance-icon"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 7h7M16 7h4M4 17h4M13 17h7M8 4v6M13 14v6"/></svg></span>
+                <div><strong>24 твика & 6 пресетов служб</strong><small>SCM граф зависимостей, 0% телеметрии</small></div>
+                <span class="row-check"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="m6 12 4 4 8-9"/></svg></span>
+              </div>
+            </div>
+            <button class="performance-action" type="button" data-scan-button>
+              <svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="10" cy="10" r="6"/><path d="m15 15 5 5M7 10h6M10 7v6"/></svg>
+              <span>Проверить систему (38 тестов)</span>
+            </button>
+            <p class="performance-foot"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M7 11V8a5 5 0 0 1 10 0v3M5 11h14v10H5V11Z"/></svg> Никаких разрушительных батников</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Myths vs Reality Section -->
+    <section class="myths section" id="myths" aria-labelledby="myths-title">
+      <div class="ambient-blobs" aria-hidden="true">
+        <div class="ambient-blob blob-myths-1"></div>
+        <div class="ambient-blob blob-myths-2"></div>
+      </div>
+
+      <div class="shell myths-shell">
+        <div class="myths-heading" data-reveal>
+          <h2 id="myths-title">Отказ от мифов и слепых скриптов</h2>
+          <p>Большинство «твикеров» применяют агрессивные bat-файлы, ломают службы Windows и обещают «+300% FPS». Aurum работает строго по инженерным принципам.</p>
+        </div>
+
+        <div class="method-compare liquid-glass" data-reveal>
+          <div class="glass-reflection"></div>
+          <div class="method-pane method-myth">
+            <h3>Типичный «твикер»</h3>
+            <ul>
+              <li><span>×</span> Слепое удаление системных служб Windows</li>
+              <li><span>×</span> Отсутствие резервных копий и точного отката</li>
+              <li><span>×</span> Поломка обновлений и Microsoft Store</li>
+              <li><span>×</span> Непроверяемые обещания «+200 FPS в играх»</li>
+              <li><span>×</span> Скрытая фоновая служба и отправка телеметрии</li>
+            </ul>
+          </div>
+          <div class="method-pane method-used">
+            <h3>Архитектура Aurum</h3>
+            <ul>
+              <li><span><svg aria-hidden="true" viewBox="0 0 24 24"><path d="m6 12 4 4 8-9"/></svg></span> 100% точный детерминированный откат в 1 клик</li>
+              <li><span><svg aria-hidden="true" viewBox="0 0 24 24"><path d="m6 12 4 4 8-9"/></svg></span> Win32 & NT Native API без внешних скриптов</li>
+              <li><span><svg aria-hidden="true" viewBox="0 0 24 24"><path d="m6 12 4 4 8-9"/></svg></span> Контроль дрейфа (Drift Detection) при обновлениях</li>
+              <li><span><svg aria-hidden="true" viewBox="0 0 24 24"><path d="m6 12 4 4 8-9"/></svg></span> Проверяемое снижение задержек ввода и очередей IRQ</li>
+              <li><span><svg aria-hidden="true" viewBox="0 0 24 24"><path d="m6 12 4 4 8-9"/></svg></span> 0% фоновой нагрузки и 0% сетевой телеметрии</li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Practical Steps -->
+        <div class="practical" id="practical" data-reveal>
+          <h3>Что действительно дает измеримый результат</h3>
+          <p>Вместо непроверяемых рецептов мы сосредоточились на 4 ключевых факторах отклика системы:</p>
+          <div class="practical-path">
+            <div>
+              <b>01</b>
+              <strong>MSI Mode & IRQ</strong>
+              <small>Аппаратные прерывания с высоким приоритетом для видеокарты и сети снижают DPC-латентность.</small>
+            </div>
+            <div>
+              <b>02</b>
+              <strong>Таймер 0.5 мс</strong>
+              <small>Частота опроса 2000 Гц в ntdll.dll для идеальной синхронизации движения мыши и кадров игры.</small>
+            </div>
+            <div>
+              <b>03</b>
+              <strong>Core Parking</strong>
+              <small>100% распаркованных ядер в изолированном плане питания исключают лаги при пробуждении ядер CPU.</small>
+            </div>
+            <div>
+              <b>04</b>
+              <strong>Ресурс SSD & Очистка</strong>
+              <small>Отключение NTFS 8.3, LastAccess, безопасный ReTrim и удаление гибернации (минус 8–32 ГБ).</small>
+            </div>
+          </div>
+          <p class="practical-closing">Каждый шаг сопровождается сохранением исходного снимка в локальный файл для моментального возврата.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 10 Features Showcase Section -->
+    <section class="features section" id="features" aria-labelledby="features-title">
+      <div class="ambient-blobs" aria-hidden="true">
+        <div class="ambient-blob blob-features-1"></div>
+        <div class="ambient-blob blob-features-2"></div>
+      </div>
+
+      <div class="shell">
+        <div class="section-heading" data-reveal>
+          <h2 id="features-title">Каталог возможностей ядра v1.0.0</h2>
+          <p>Все 10 модулей работают локально через нативные API Windows, транзакционно и без фоновых демонов.</p>
+        </div>
+
+        <div class="feature-rail" role="tablist" aria-label="Модули Aurum" data-reveal>
+          <!-- 1. MSI -->
+          <button class="feature-tab is-active" type="button" role="tab" aria-selected="true" data-feature="msi">
+            <span class="feature-icon"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></svg></span>
+            <strong>MSI Mode</strong>
+            <small>Прерывания GPU/NIC</small>
+          </button>
+
+          <!-- 2. Timer -->
+          <button class="feature-tab" type="button" role="tab" aria-selected="false" data-feature="timer">
+            <span class="feature-icon"><svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg></span>
+            <strong>Таймер 0.5 мс</strong>
+            <small>2000 Гц ntdll.dll</small>
+          </button>
+
+          <!-- 3. Tweaks -->
+          <button class="feature-tab" type="button" role="tab" aria-selected="false" data-feature="tweaks">
+            <span class="feature-icon"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/></svg></span>
+            <strong>24 твика</strong>
+            <small>8 категорий ядра</small>
+          </button>
+
+          <!-- 4. Power -->
+          <button class="feature-tab" type="button" role="tab" aria-selected="false" data-feature="power">
+            <span class="feature-icon"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M18.36 6.64a9 9 0 1 1-12.73 0M12 2v10"/></svg></span>
+            <strong>Core Parking</strong>
+            <small>100% Unparked</small>
+          </button>
+
+          <!-- 5. Network -->
+          <button class="feature-tab" type="button" role="tab" aria-selected="false" data-feature="network">
+            <span class="feature-icon"><svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3.6 9h16.8M3.6 15h16.8M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg></span>
+            <strong>Сеть & DNS</strong>
+            <small>5 DNS профилей</small>
+          </button>
+
+          <!-- 6. Storage -->
+          <button class="feature-tab" type="button" role="tab" aria-selected="false" data-feature="storage">
+            <span class="feature-icon"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6Zm2 4h12M6 14h12M8 7h.01M8 11h.01M8 15h.01"/></svg></span>
+            <strong>SSD & Накопители</strong>
+            <small>NTFS 8.3 & ReTrim</small>
+          </button>
+
+          <!-- 7. Cleanup -->
+          <button class="feature-tab" type="button" role="tab" aria-selected="false" data-feature="cleanup">
+            <span class="feature-icon"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M10 11v6M14 11v6"/></svg></span>
+            <strong>Очистка диска</strong>
+            <small>2-фазный Safe Scan</small>
+          </button>
+
+          <!-- 8. Services -->
+          <button class="feature-tab" type="button" role="tab" aria-selected="false" data-feature="services">
+            <span class="feature-icon"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg></span>
+            <strong>Граф служб</strong>
+            <small>6 SCM пресетов</small>
+          </button>
+
+          <!-- 9. Atlas -->
+          <button class="feature-tab" type="button" role="tab" aria-selected="false" data-feature="atlas">
+            <span class="feature-icon"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></span>
+            <strong>AtlasOS Health</strong>
+            <small>SHA-256 офлайн</small>
+          </button>
+
+          <!-- 10. Monitoring -->
+          <button class="feature-tab" type="button" role="tab" aria-selected="false" data-feature="monitoring">
+            <span class="feature-icon"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M3 3v18h18M7 16l4-8 4 6 5-10"/></svg></span>
+            <strong>Мониторинг</strong>
+            <small>0% CPU в фоне</small>
+          </button>
+        </div>
+
+        <div class="feature-detail liquid-glass" id="feature-detail" data-reveal>
+          <div class="glass-reflection"></div>
+          <div class="detail-copy">
+            <h3 data-detail-title>Аппаратные прерывания (MSI Mode)</h3>
+            <p data-detail-copy>Переводит видеокарту, сеть, звук и накопители в режим Message Signaled Interrupts. Высокий приоритет для GPU и сети устраняет очереди IRQ и снижает DPC Latency.</p>
+            <div class="detail-result">
+              <svg aria-hidden="true" viewBox="0 0 24 24"><path d="m6 12 4 4 8-9"/></svg>
+              <span data-detail-result>Снижение задержки ввода и микрофризов в играх</span>
+            </div>
+          </div>
+          <div class="audit-view">
+            <div class="audit-head">
+              <span><i></i> Активный снимок состояния</span>
+              <strong>1-клик пресет</strong>
+            </div>
+            <div class="audit-line">
+              <code>NVIDIA RTX GPU</code>
+              <span>MSI High Priority</span>
+            </div>
+            <div class="audit-line">
+              <code>Realtek Gaming 2.5GbE</code>
+              <span>MSI High Priority</span>
+            </div>
+            <div class="audit-line">
+              <code>USB xHCI Controller</code>
+              <span>MSI Normal Priority</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Simple vs Pro Mode Section -->
+    <section class="modes section" id="modes" aria-labelledby="modes-title">
+      <div class="ambient-blobs" aria-hidden="true">
+        <div class="ambient-blob blob-modes-1"></div>
+        <div class="ambient-blob blob-modes-2"></div>
+      </div>
+
+      <div class="shell">
+        <div class="section-heading" data-reveal>
+          <h2 id="modes-title">Два режима: Simple и Pro</h2>
+          <p>Aurum адаптируется под ваш опыт. Переключение режима меняет плотность и техническую детализацию, сохраняя 100% надежности.</p>
+        </div>
+
+        <div class="modes-grid" data-reveal>
+          <!-- Simple Mode -->
+          <div class="mode-card liquid-glass">
+            <div class="glass-reflection"></div>
+            <span class="mode-badge">Режим «Simple»</span>
+            <h3>Понятный язык и готовые пресеты</h3>
+            <p>Идеально для игроков и пользователей, которым нужна максимальная отзывчивость системы без необходимости вникать в регистры Windows.</p>
+            <ul class="mode-features">
+              <li><svg aria-hidden="true" viewBox="0 0 24 24"><path d="m6 12 4 4 8-9"/></svg> Человеческие описания твиков и оценка рисков</li>
+              <li><svg aria-hidden="true" viewBox="0 0 24 24"><path d="m6 12 4 4 8-9"/></svg> 1-клик пресеты для киберспорта и стабильности</li>
+              <li><svg aria-hidden="true" viewBox="0 0 24 24"><path d="m6 12 4 4 8-9"/></svg> Защита от случайного отключения критических служб</li>
+              <li><svg aria-hidden="true" viewBox="0 0 24 24"><path d="m6 12 4 4 8-9"/></svg> Кнопка «Вернуть все как было» в один клик</li>
+            </ul>
+            <div class="mode-preview simple-preview">
+              <div class="preview-tag">Отображение в Simple Mode:</div>
+              <strong>⚡ Оптимизировать видеокарту для игр</strong>
+              <small>Включает режим MSI и повышает приоритет обработки кадров GPU.</small>
+            </div>
+          </div>
+
+          <!-- Pro Mode -->
+          <div class="mode-card liquid-glass">
+            <div class="glass-reflection"></div>
+            <span class="mode-badge pro-badge">Режим «Pro»</span>
+            <h3>Полный аудит для системных инженеров</h3>
+            <p>Развернутая инженерная информация: шестнадцатеричные маски, GUID схем питания, векторы прерываний и дампы сетевого стека.</p>
+            <ul class="mode-features">
+              <li><svg aria-hidden="true" viewBox="0 0 24 24"><path d="m6 12 4 4 8-9"/></svg> GUID планов питания и параметры CPMINCORES / CPMAXCORES</li>
+              <li><svg aria-hidden="true" viewBox="0 0 24 24"><path d="m6 12 4 4 8-9"/></svg> Идентификаторы шины PCI (Bus, Device, Function ID)</li>
+              <li><svg aria-hidden="true" viewBox="0 0 24 24"><path d="m6 12 4 4 8-9"/></svg> Граф обратных зависимостей служб (SCM Reverse Tree)</li>
+              <li><svg aria-hidden="true" viewBox="0 0 24 24"><path d="m6 12 4 4 8-9"/></svg> Детализация транзакций и JSON-снимков реестра</li>
+            </ul>
+            <div class="mode-preview pro-preview">
+              <div class="preview-tag">Отображение в Pro Mode:</div>
+              <code>PCI\VEN_10DE&DEV_2704 | MSI: Supported=1, Mode=1, AffInt=0x0002</code>
+              <code>Win32PrioritySeparation: 0x00000026 (Short, Variable, HighForeground)</code>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- FAQ Accordion Section -->
+    <section class="faq section" id="faq" aria-labelledby="faq-title">
+      <div class="ambient-blobs" aria-hidden="true">
+        <div class="ambient-blob blob-faq-1"></div>
+        <div class="ambient-blob blob-faq-2"></div>
+      </div>
+
+      <div class="shell faq-shell">
+        <div class="section-heading text-center" data-reveal>
+          <h2 id="faq-title">Часто задаваемые вопросы</h2>
+          <p>Ответы на главные вопросы о безопасности, античитах и откате изменений.</p>
+        </div>
+
+        <div class="faq-accordion" data-reveal>
+          <!-- Q1 -->
+          <div class="faq-item liquid-glass">
+            <div class="glass-reflection"></div>
+            <button class="faq-trigger" type="button" aria-expanded="false">
+              <strong>Безопасен ли Aurum для античитов (Vanguard, EAC, BattlEye, Ricochet)?</strong>
+              <span class="faq-icon"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></span>
+            </button>
+            <div class="faq-content">
+              <p><strong>Да, на 100% безопасен.</strong> Aurum не внедряет DLL в процессы игр, не модифицирует исполняемые файлы и не патчит ядро Windows. Все настройки применяются исключительно через штатные документированные механизмы Win32 / NT Native API и официальные ветки реестра Windows.</p>
+            </div>
+          </div>
+
+          <!-- Q2 -->
+          <div class="faq-item liquid-glass">
+            <div class="glass-reflection"></div>
+            <button class="faq-trigger" type="button" aria-expanded="false">
+              <strong>Нужна ли обязательная установка AtlasOS или подходит чистая Windows?</strong>
+              <span class="faq-icon"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></span>
+            </button>
+            <div class="faq-content">
+              <p>Aurum одинаково безупречно работает как на чистых версиях <strong>Windows 10 (21H2+)</strong> и <strong>Windows 11 (22H2–24H2)</strong>, так и поверх оптимизированных сборок AtlasOS. Если система обнаружена как AtlasOS, активируется дополнительный автономный модуль проверки целостности компонентов (Atlas Health).</p>
+            </div>
+          </div>
+
+          <!-- Q3 -->
+          <div class="faq-item liquid-glass">
+            <div class="glass-reflection"></div>
+            <button class="faq-trigger" type="button" aria-expanded="false">
+              <strong>Работает ли Aurum в фоновом режиме и грузит ли процессор?</strong>
+              <span class="faq-icon"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></span>
+            </button>
+            <div class="faq-content">
+              <p><strong>0% нагрузки на CPU.</strong> У Aurum нет резидентных фоновых служб, автозагрузки и скрытых демонов. Приложение запускается, выполняет нужную настройку или аудит и полностью выгружается из памяти при закрытии окна.</p>
+            </div>
+          </div>
+
+          <!-- Q4 -->
+          <div class="faq-item liquid-glass">
+            <div class="glass-reflection"></div>
+            <button class="faq-trigger" type="button" aria-expanded="false">
+              <strong>Что происходит при обновлениях Windows Update?</strong>
+              <span class="faq-icon"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></span>
+            </button>
+            <div class="faq-content">
+              <p>При каждом запуске Aurum активируется механизм <strong>Drift Detection</strong>. Если очередное обновление Windows сбросило параметр реестра или план питания, Aurum мгновенно подсветит статус «Дрейф» и предложит восстановить желаемое состояние одной кнопкой <em>«Исправить»</em> без потери исходного снапшота отката.</p>
+            </div>
+          </div>
+
+          <!-- Q5 -->
+          <div class="faq-item liquid-glass">
+            <div class="glass-reflection"></div>
+            <button class="faq-trigger" type="button" aria-expanded="false">
+              <strong>Как гарантируется 100% откат настроек?</strong>
+              <span class="faq-icon"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></span>
+            </button>
+            <div class="faq-content">
+              <p>Перед записью любого изменения движок снимает детальный снимок реестра (включая флаг отсутствия ключа). Снимок сохраняется локально в <code>%LocalAppData%\Aurum\*.json</code>. При откате параметры восстанавливаются строго в обратном порядке декларации, гарантируя 100% исходное состояние.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Tech Specs & Download Section -->
+    <section class="specs section" id="specs" aria-labelledby="specs-title">
+      <div class="ambient-blobs" aria-hidden="true">
+        <div class="ambient-blob blob-specs-1"></div>
+        <div class="ambient-blob blob-specs-2"></div>
+      </div>
+
+      <div class="shell">
+        <div class="specs-card liquid-glass" data-reveal>
+          <div class="glass-reflection"></div>
+          <div class="specs-grid">
+            <div class="specs-info">
+              <span class="specs-tag">Release v1.0.0 · Standalone Binary</span>
+              <h2 id="specs-title">Готов к использованию</h2>
+              <p>Автономный single-file исполняемый файл без сторонних зависимостей. Загрузите и запустите без инсталлятора.</p>
+              <div class="specs-actions">
+                <a class="button button-primary" href="../dist/Aurum.exe" download>
+                  <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 3v13m0 0 4-4m-4 4-4-4M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
+                  Скачать Aurum.exe (~72.8 МБ)
+                </a>
+                <a class="button button-outline source-link" href="../">
+                  <svg aria-hidden="true" viewBox="0 0 24 24"><path d="m8 8-4 4 4 4M16 8l4 4-4 4M14 4l-4 16"/></svg>
+                  Репозиторий на GitHub
+                </a>
+              </div>
+            </div>
+
+            <div class="specs-table">
+              <div class="specs-row">
+                <span>Поддерживаемые ОС</span>
+                <strong>Windows 11 (22H2–24H2) / 10 (21H2+) x64</strong>
+              </div>
+              <div class="specs-row">
+                <span>Формат сборки</span>
+                <strong>Single-File Portable (Self-Contained)</strong>
+              </div>
+              <div class="specs-row">
+                <span>Стек технологий</span>
+                <strong>C# 12 / .NET 8 / Win32 & NT Native P/Invoke</strong>
+              </div>
+              <div class="specs-row">
+                <span>Тестирование ядра</span>
+                <strong>38/38 Unit & Integration Tests (Pass)</strong>
+              </div>
+              <div class="specs-row">
+                <span>Телеметрия</span>
+                <strong>0% (Полностью локально и офлайн)</strong>
+              </div>
+              <div class="specs-row">
+                <span>Лицензия</span>
+                <strong>MIT License (Open Source)</strong>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Principles Section -->
+    <section class="principles section" id="principles" aria-labelledby="principles-title">
+      <div class="shell">
+        <div class="section-heading" data-reveal>
+          <h2 id="principles-title">Архитектурные принципы</h2>
+          <p>Прозрачность, измеримость и детерминированность в каждой строчке кода.</p>
+        </div>
+
+        <div class="principle-list" data-reveal>
+          <article class="liquid-card">
+            <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            <div>
+              <h3>Проверяемость</h3>
+              <p>Никаких бинарных «черных ящиков». Каждая операция прозрачна и описана в открытом исходном коде.</p>
+            </div>
+          </article>
+          <article class="liquid-card">
+            <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 18 0 9 9 0 0 0-18 0Zm9-5v5l3 3"/></svg>
+            <div>
+              <h3>Транзакционность</h3>
+              <p>Многосоставные твики применяются атомарно. При любой ошибке система мгновенно возвращается назад.</p>
+            </div>
+          </article>
+          <article class="liquid-card">
+            <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 4h16v16H4zM4 9h16M9 4v16"/></svg>
+            <div>
+              <h3>Локальность</h3>
+              <p>Конфигурация хранится исключительно на вашем ПК в <code>%LocalAppData%\Aurum\</code> без облаков.</p>
+            </div>
+          </article>
+        </div>
+
+        <a class="text-link" href="../docs/architecture.md">
+          <span>Спецификация архитектуры</span>
+          <span aria-hidden="true">→</span>
+        </a>
+      </div>
+    </section>
+
+    <!-- Workflow Section -->
+    <section class="workflow section" aria-labelledby="workflow-title">
+      <div class="shell">
+        <div class="section-heading" data-reveal>
+          <h2 id="workflow-title">Как работает изменение</h2>
+          <p>Трехэтапный цикл безопасного применения параметров в ядре Aurum.</p>
+        </div>
+
+        <div class="journey" data-reveal>
+          <div class="journey-step step-one">
+            <span>01</span>
+            <h3>Снимок системы</h3>
+            <p>Чтение live-состояния ключей и значений реестра перед любым вмешательством.</p>
+          </div>
+          <div class="journey-step step-two">
+            <span>02</span>
+            <h3>Атомарная запись</h3>
+            <p>Применение строго в порядке декларации с контролем успешности каждой операции.</p>
+          </div>
+          <div class="journey-step step-three">
+            <span>03</span>
+            <h3>Точный откат</h3>
+            <p>Восстановление исходных значений в обратном порядке из локального хранилища.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Development / Code Preview Section -->
+    <section class="development section" id="development" aria-labelledby="development-title">
+      <div class="ambient-blobs" aria-hidden="true">
+        <div class="ambient-blob blob-dev-1"></div>
+        <div class="ambient-blob blob-dev-2"></div>
+      </div>
+
+      <div class="shell development-grid">
+        <div class="development-copy" data-reveal>
+          <h2 id="development-title">Открытый исходный код</h2>
+          <p>Архитектура построена на чистом C# 12 и .NET 8 с полной изоляцией ядра от интерфейса пользователя. 38 тестов валидируют каждую операцию.</p>
+          <div class="development-actions">
+            <a class="button button-primary source-link" href="../">
+              <svg aria-hidden="true" viewBox="0 0 24 24"><path d="m8 8-4 4 4 4M16 8l4 4-4 4M14 4l-4 16"/></svg>
+              Репозиторий на GitHub
+            </a>
+            <a class="button button-outline" href="../docs/roadmap.md">
+              <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+              Дорожная карта
+            </a>
+          </div>
+          <p class="project-facts">
+            <span><svg aria-hidden="true" viewBox="0 0 24 24"><path d="m6 12 4 4 8-9"/></svg> C# 12 / .NET 8 (AOT-Ready)</span>
+            <i>·</i>
+            <span><svg aria-hidden="true" viewBox="0 0 24 24"><path d="m6 12 4 4 8-9"/></svg> 38/38 Unit & Self-Tests</span>
+            <i>·</i>
+            <span><svg aria-hidden="true" viewBox="0 0 24 24"><path d="m6 12 4 4 8-9"/></svg> MIT License</span>
+          </p>
+        </div>
+
+        <div class="code-window liquid-glass" data-reveal>
+          <div class="glass-reflection"></div>
+          <div class="code-header">
+            <b>TweakEngine.cs</b>
+            <i>Транзакционный откат</i>
+          </div>
+          <pre><code><span class="ln">01</span><span class="comment">// 1. Захват исходного состояния до мутации</span>
+<span class="ln">02</span><em>var</em> original = <em>await</em> _store.ReadSnapshotAsync(tweak);
+<span class="ln">03</span>
+<span class="ln">04</span><span class="comment">// 2. Применение параметров в строгом порядке</span>
+<span class="ln">05</span><em>foreach</em> (<em>var</em> step <em>in</em> tweak.Mutations)
+<span class="ln">06</span>{
+<span class="ln">07</span>    <em>var</em> success = <em>await</em> _store.ApplyAsync(step);
+<span class="ln">08</span>    <em>if</em> (!success)
+<span class="ln">09</span>    {
+<span class="ln">10</span>        <span class="comment">// При сбое — атомарный откат назад</span>
+<span class="ln">11</span>        <em>await</em> RollbackCompletedStepsAsync(completed);
+<span class="ln">12</span>        <em>throw new</em> TweakTransactionException();
+<span class="ln">13</span>    }
+<span class="ln">14</span>    completed.Add(step);
+<span class="ln">15</span>}
+<span class="ln">16</span>
+<span class="ln">17</span><span class="comment">// 3. Сохранение локального снапшота отката</span>
+<span class="ln">18</span><em>await</em> _repository.SaveSnapshotAsync(tweak.Id, original);</code></pre>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <div class="shell footer-grid">
+      <div>
+        <a class="brand footer-brand" href="#top">AURUM</a>
+        <p>Прозрачная производительность Windows без мифов.</p>
+      </div>
+
+      <nav aria-label="Ссылки в подвале">
+        <a href="#practical">Что работает</a>
+        <a href="#features">Возможности</a>
+        <a href="#modes">Simple / Pro</a>
+        <a href="#faq">FAQ</a>
+        <a href="#specs">Скачать</a>
+        <a href="../README.md">Документация</a>
+        <a href="../SECURITY.md">Безопасность</a>
+        <a href="../LICENSE">Лицензия</a>
+      </nav>
+
+      <div class="disclaimer">
+        <p>© 2026 Aurum Contributors. MIT License.<br>Не является официальным продуктом Microsoft или AtlasOS.</p>
+      </div>
+    </div>
+  </footer>
+</body>
+</html>

@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <RootNamespace>Aurum.Core.SelfTests</RootNamespace>
+    <AssemblyName>Aurum.Core.SelfTests</AssemblyName>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Aurum.Core\Aurum.Core.csproj" />
+    <ProjectReference Include="..\..\src\Aurum.Infrastructure.Windows\Aurum.Infrastructure.Windows.csproj" />
+  </ItemGroup>
+</Project>

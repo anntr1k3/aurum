@@ -1,0 +1,24 @@
+name: build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+      - name: Restore
+        run: dotnet restore .\Aurum.sln --configfile .\NuGet.Config
+      - name: Build
+        run: dotnet build .\Aurum.sln --configuration Release --no-restore
+      - name: Test transactional engine
+        run: dotnet run --project .\tests\Aurum.Core.SelfTests --configuration Release --no-build --no-restore
