@@ -283,16 +283,13 @@ public sealed class ServiceItemViewModel : ObservableObject
 
     public async Task<bool> RevertDirectAsync()
     {
-        if (!CanRevert) return false;
-        try
-        {
-            await _manager.RevertServiceAsync(Name);
-            return true;
-        }
-        catch
+        if (!CanRevert)
         {
             return false;
         }
+
+        await _manager.RevertServiceAsync(Name);
+        return true;
     }
 
     public bool CanDisable => Safety != ServiceSafetyClass.Protected &&
@@ -482,6 +479,45 @@ public sealed class ServicesViewModel : ObservableObject
         {
             IsBusy = false;
         }
+    }
+
+    /// <summary>
+    /// Revert every tracked service without prompting and without reporting its own status,
+    /// for the global revert that confirms once and reports one summary. Returns how many
+    /// services were restored; failures propagate so the caller can list them.
+    /// </summary>
+    public async Task<int> RevertAllServicesDirectAsync()
+    {
+        var count = 0;
+        var failures = new List<Exception>();
+        foreach (var serviceVm in _all.Where(static s => s.CanRevert).ToList())
+        {
+            try
+            {
+                if (await serviceVm.RevertDirectAsync())
+                {
+                    count++;
+                }
+            }
+            catch (Exception error)
+            {
+                failures.Add(error);
+            }
+        }
+
+        if (count > 0)
+        {
+            await RefreshAsync();
+        }
+
+        if (failures.Count != 0)
+        {
+            throw new AggregateException(
+                $"Не удалось восстановить {failures.Count} служб.",
+                failures);
+        }
+
+        return count;
     }
 
     public async Task RevertAllServicesAsync()

@@ -112,11 +112,10 @@ Core parking must never be presented as a universally beneficial on/off switch.
 
 ## 4. Services
 
-**Status:** the read-only dependency analyzer is implemented. Aurum inventories
-SCM state, startup type, delayed auto-start, PID, descriptions, dependencies,
-and reverse consumers. It provides search, an all-services view, a reviewed
-context-dependent view, and an explicit protected class. No service mutation is
-implemented yet; reversible per-service changes and workload checks remain
+**Status:** inventory, dependency analysis, and reversible per-service
+disable/revert/repair are implemented. Presets group optional services by
+capability. Protected names cannot be disabled or repaired from a snapshot.
+Workload-aware batch refusal and live parked-core visualization remain
 future work.
 
 - Inventory service state, startup type, dependencies, and dependants.

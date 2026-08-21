@@ -177,6 +177,23 @@ public sealed class PowerPlanViewModel : ObservableObject
             $"Исходный план «{original.Name}» восстановлен.");
     }
 
+    /// <summary>
+    /// Revert without prompting and without reporting its own status, for the global revert
+    /// that confirms once for everything it is about to undo and reports one summary.
+    /// Failures propagate so the caller can list them.
+    /// </summary>
+    public async Task<bool> RevertDirectAsync()
+    {
+        if (!CanRevert)
+        {
+            return false;
+        }
+
+        await _manager.RevertAsync();
+        await RefreshInternalAsync();
+        return true;
+    }
+
     private async Task RunMutationAsync(Func<Task> action, string successMessage)
     {
         IsBusy = true;

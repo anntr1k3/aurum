@@ -288,6 +288,45 @@
                 <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
 
+            <StackPanel>
+
+            <!-- Shown while Aurum runs unelevated. Reading the system works either way, but
+                 every change needs administrator rights, so say so before the user picks. -->
+            <Border Margin="0,0,0,14"
+                    Padding="14,11"
+                    Background="{StaticResource ElevatedBrush}"
+                    BorderBrush="{StaticResource WarningBrush}"
+                    BorderThickness="1"
+                    CornerRadius="8"
+                    Visibility="{Binding IsElevationWarningVisible, Converter={StaticResource BooleanToVisibilityConverter}}">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Text="🛡️" FontSize="17" VerticalAlignment="Center" Margin="0,0,11,0" />
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                        <TextBlock Text="Aurum запущен без прав администратора"
+                                   Foreground="{StaticResource TextBrush}"
+                                   FontSize="12"
+                                   FontWeight="SemiBold" />
+                        <TextBlock Margin="0,2,0,0"
+                                   Foreground="{StaticResource MutedBrush}"
+                                   FontSize="11"
+                                   TextWrapping="Wrap"
+                                   Text="Проверка системы, диагностика и мониторинг работают. Применение твиков, изменение служб, схем питания и режима MSI завершится ошибкой." />
+                    </StackPanel>
+                    <Button Grid.Column="2"
+                            Margin="14,0,0,0"
+                            Padding="14,8"
+                            VerticalAlignment="Center"
+                            Style="{StaticResource PrimaryButton}"
+                            Command="{Binding RestartAsAdministratorCommand}"
+                            Content="Перезапустить от администратора" />
+                </Grid>
+            </Border>
+
             <Grid Margin="0,0,0,16">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
@@ -361,6 +400,8 @@
                         Content="Применить выбранное"
                         Visibility="{Binding IsProModeVisible, Converter={StaticResource BooleanToVisibilityConverter}}" />
             </Grid>
+
+            </StackPanel>
 
             <!-- AURUM WELCOME & INFO VIEW -->
             <ScrollViewer Grid.Row="1"

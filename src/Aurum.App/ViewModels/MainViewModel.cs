@@ -1,4 +1,7 @@
 using System.Collections.ObjectModel;
+using System.ComponentModel;
+using System.Diagnostics;
+using System.Windows;
 using Aurum.Core;
 using Aurum.Infrastructure.Windows;
 
@@ -6,6 +9,9 @@ namespace Aurum.App.ViewModels;
 
 public sealed class MainViewModel : ObservableObject, IDisposable
 {
+    /// <summary>ERROR_CANCELLED, which is what ShellExecute reports when UAC is dismissed.</summary>
+    private const int ErrorCancelled = 1223;
+
     private readonly WindowsSystemProbe _systemProbe;
     private readonly AtlasHealthService _atlasHealthService;
     private readonly SystemCleanupService _cleanupService;
@@ -115,7 +121,8 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         SetSimpleCategoryCommand = new RelayCommand<string>(SetSimpleCategory);
         ApplySimpleGamingPresetCommand = new AsyncRelayCommand(ApplySimpleGamingPresetAsync, () => !IsBusy, ex => ReportStatus($"Ошибка: {ex.Message}", true));
         ApplyAllSimpleCurrentCategoryCommand = new AsyncRelayCommand(ApplyAllSimpleCurrentCategoryAsync, () => !IsBusy, ex => ReportStatus($"Ошибка: {ex.Message}", true));
-        RevertAllSimpleCommand = new AsyncRelayCommand(RevertAllSimpleAsync, () => !IsBusy, ex => ReportStatus($"Ошибка: {ex.Message}", true));
+        RevertAllSimpleCommand = new AsyncRelayCommand(RevertEverythingAsync, () => !IsBusy, ex => ReportStatus($"Ошибка: {ex.Message}", true));
+        RestartAsAdministratorCommand = new RelayCommand<object>(_ => RestartAsAdministrator());
 
         SelectAllTweaksCommand = new RelayCommand<object>(_ => SelectAllFilteredTweaks());
         DeselectAllTweaksCommand = new RelayCommand<object>(_ => DeselectAllFilteredTweaks());
@@ -245,6 +252,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     public RelayCommand<string> SetSimpleCategoryCommand { get; }
     public AsyncRelayCommand ApplySimpleGamingPresetCommand { get; }
     public AsyncRelayCommand RevertAllSimpleCommand { get; }
+    public RelayCommand<object> RestartAsAdministratorCommand { get; }
 
     private string _simpleSearchText = string.Empty;
     public string SimpleSearchText
@@ -447,6 +455,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                 OnPropertyChanged(nameof(BuildLabel));
                 OnPropertyChanged(nameof(AccessLabel));
                 OnPropertyChanged(nameof(AtlasLabel));
+                OnPropertyChanged(nameof(IsElevationWarningVisible));
             }
         }
     }
@@ -456,6 +465,14 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     public string AccessLabel => System is null
         ? "—"
         : System.IsAdministrator ? "Администратор" : "Обычный пользователь";
+
+    /// <summary>
+    /// Aurum keeps the asInvoker manifest so that monitoring, diagnostics and browsing the
+    /// catalog work without a UAC prompt. Everything that writes needs elevation, though,
+    /// and without this banner the user only found that out from an error after choosing
+    /// what to change.
+    /// </summary>
+    public bool IsElevationWarningVisible => System is not null && !System.IsAdministrator;
     public string AtlasLabel => System is null
         ? "—"
         : System.AtlasMarkerDetected ? "Маркеры найдены" : "Маркеры не найдены";
@@ -773,6 +790,50 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     {
         StatusMessage = message;
         HasError = isError;
+    }
+
+    private void RestartAsAdministrator()
+    {
+        // Environment.ProcessPath rather than the assembly location, which is empty in the
+        // single-file release build.
+        var executable = Environment.ProcessPath;
+        if (string.IsNullOrWhiteSpace(executable))
+        {
+            ReportStatus("Не удалось определить путь к исполняемому файлу Aurum.", true);
+            return;
+        }
+
+        var startInfo = new ProcessStartInfo(executable)
+        {
+            UseShellExecute = true,
+            Verb = "runas"
+        };
+
+        // Carried over so that a restart from, say, the monitoring shortcut reopens on the
+        // same view instead of the welcome screen.
+        foreach (var argument in Environment.GetCommandLineArgs().Skip(1))
+        {
+            startInfo.ArgumentList.Add(argument);
+        }
+
+        try
+        {
+            Process.Start(startInfo);
+        }
+        catch (Win32Exception error) when (error.NativeErrorCode == ErrorCancelled)
+        {
+            ReportStatus(
+                "Запуск с правами администратора отменён. Aurum продолжает работать в режиме чтения.",
+                true);
+            return;
+        }
+        catch (Exception error)
+        {
+            ReportStatus($"Не удалось перезапустить Aurum с правами администратора: {error.Message}", true);
+            return;
+        }
+
+        Application.Current?.Shutdown();
     }
 
     private static string FormatBytes(long bytes)
@@ -1169,50 +1230,131 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         }
     }
 
-    public async Task RevertAllSimpleAsync()
+    /// <summary>
+    /// Undoes everything Aurum tracks, across all seven managers. Each subsystem is
+    /// attempted independently: an earlier version stopped at the first exception, which
+    /// left the remaining changes applied while reporting a single error, exactly when the
+    /// user most needs the rest to be undone.
+    /// </summary>
+    public async Task RevertEverythingAsync()
     {
-        if (!_confirm("Вы действительно хотите вернуть все применённые параметры к исходному состоянию Windows?"))
+        if (!_confirm(
+                "Вернуть всё, что Aurum изменил, к исходному состоянию Windows?\n\n" +
+                "Будут отменены твики реестра, режим MSI, разрешение системного таймера, " +
+                "настройки дисков, парковка ядер, схема питания, DNS и отключённые службы."))
         {
             return;
         }
 
         IsBusy = true;
+        var failures = new List<string>();
+        var restored = new List<string>();
+
         try
         {
-            foreach (var tweak in Tweaks.Where(t => t.CanRevert))
+            var tweaksToRevert = Tweaks.Where(static tweak => tweak.CanRevert).ToList();
+            var revertedTweaks = 0;
+            foreach (var tweak in tweaksToRevert)
             {
-                await tweak.TryRevertAsync();
+                if (await tweak.TryRevertAsync())
+                {
+                    revertedTweaks++;
+                }
+            }
+
+            if (revertedTweaks > 0)
+            {
+                restored.Add($"твиков: {revertedTweaks}");
+            }
+
+            if (tweaksToRevert.Count != revertedTweaks)
+            {
+                failures.Add($"твики ({tweaksToRevert.Count - revertedTweaks} не удалось)");
             }
 
             if (Msi.HasActiveModifications)
             {
-                await Msi.RevertAsync();
+                await RevertStepAsync("режим MSI", () => Msi.RevertDirectAsync(), failures, restored);
             }
 
-            Timer.ResetResolution();
+            if (Timer.ResetResolution())
+            {
+                restored.Add("таймер");
+            }
+            else
+            {
+                failures.Add("таймер");
+            }
 
-            await Storage.RevertTuningDirectAsync();
+            await RevertStepAsync("настройки дисков", async () => await Storage.RevertTuningDirectAsync(), failures, restored);
 
             if (CoreParking.CanRevert)
             {
-                await CoreParking.RevertDirectAsync();
+                await RevertStepAsync("парковка ядер", async () => await CoreParking.RevertDirectAsync(), failures, restored);
+            }
+
+            if (Power.CanRevert)
+            {
+                await RevertStepAsync("схема питания", async () => await Power.RevertDirectAsync(), failures, restored);
             }
 
             if (Network.CanRevertDns)
             {
-                await Network.RevertDnsDirectAsync();
+                await RevertStepAsync("DNS", () => Network.RevertDnsDirectAsync(), failures, restored);
+            }
+
+            try
+            {
+                var revertedServices = await Services.RevertAllServicesDirectAsync();
+                if (revertedServices > 0)
+                {
+                    restored.Add($"служб: {revertedServices}");
+                }
+            }
+            catch (Exception error)
+            {
+                failures.Add($"службы ({error.Message})");
             }
 
             SyncSimpleFeatures();
-            ReportStatus("Все параметры безопасно возвращены к исходным значениям Windows.", false);
-        }
-        catch (Exception ex)
-        {
-            ReportStatus($"Ошибка при возврате к исходным: {ex.Message}", true);
+
+            if (failures.Count == 0)
+            {
+                ReportStatus(
+                    restored.Count == 0
+                        ? "Отслеживаемых изменений не найдено: система уже в исходном состоянии."
+                        : $"Возвращено к исходному состоянию — {string.Join(", ", restored)}.",
+                    false);
+            }
+            else
+            {
+                // Named rather than counted, because the user has to go and finish these by
+                // hand and needs to know which ones.
+                ReportStatus(
+                    $"Откат выполнен частично. Не удалось вернуть: {string.Join("; ", failures)}.",
+                    true);
+            }
         }
         finally
         {
             IsBusy = false;
+        }
+    }
+
+    private static async Task RevertStepAsync(
+        string label,
+        Func<Task> step,
+        List<string> failures,
+        List<string> restored)
+    {
+        try
+        {
+            await step();
+            restored.Add(label);
+        }
+        catch (Exception error)
+        {
+            failures.Add($"{label} ({error.Message})");
         }
     }
 

@@ -190,7 +190,7 @@ public sealed class TweakItemViewModel : ObservableObject
 
     private Task ApplyAsync() => TryApplyAsync();
 
-    public Task TryRevertAsync() => RevertAsync();
+    public Task<bool> TryRevertAsync() => RevertAsync();
 
     private async Task RepairAsync()
     {
@@ -212,7 +212,7 @@ public sealed class TweakItemViewModel : ObservableObject
         }
     }
 
-    private async Task RevertAsync()
+    private async Task<bool> RevertAsync()
     {
         IsBusy = true;
         try
@@ -220,11 +220,13 @@ public sealed class TweakItemViewModel : ObservableObject
             await _engine.RevertAsync(Definition);
             await RefreshAsync();
             _reportStatus($"Исходное состояние для «{Name}» восстановлено.", false);
+            return true;
         }
         catch (Exception error)
         {
             await RefreshAfterFailureAsync();
             _reportStatus($"Не удалось восстановить «{Name}»: {error.Message}", true);
+            return false;
         }
         finally
         {

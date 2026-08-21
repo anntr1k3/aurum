@@ -20,9 +20,11 @@ changing the machine.
 
 1. Reject an unknown or already tracked tweak.
 2. Read and retain every original value.
-3. Apply mutations in declaration order.
-4. If a write fails, restore completed mutations in reverse order.
-5. Persist the original snapshot only after all writes succeed.
+3. Persist the original snapshot before the first mutation, so a process kill
+   cannot leave the system changed with no record of what to restore.
+4. Apply mutations in declaration order.
+5. If a write fails, restore completed mutations in reverse order and discard
+   the snapshot. Revert refuses snapshot locations that the tweak did not declare.
 
 ## Revert transaction
 
@@ -43,9 +45,9 @@ authoritative user rollback point.
 ## Power-plan transaction
 
 Power-plan selection uses a separate transaction boundary. Aurum records the
-active plan before switching, activates an existing Windows plan through the
-Power API, and then persists the original and desired GUIDs. If persistence
-fails, the original plan is restored immediately. External plan changes are
+original and desired GUIDs first; only then does it activate the chosen plan
+through the Power API. If the record cannot be saved, Windows is left untouched.
+If activation fails, the record is discarded. External plan changes are
 reported as drift; repair returns to the desired plan without replacing the
 original rollback point. Built-in plan parameters are never edited.
 
@@ -66,7 +68,11 @@ Aurum reads live process state, startup configuration, delayed-auto-start flags,
 descriptions, and direct dependencies, then builds reverse dependants in memory.
 Classification is allowlist-based: critical names are protected, a small set of
 feature services is context-dependent, and everything else remains unclassified.
-This slice contains no start, stop, or configuration-changing service handles.
+Disable, revert, and repair go through `ServiceManager` with a rollback
+snapshot of start mode and delayed auto-start. Repair refuses names in the
+protected set. Revert writes a start mode from the snapshot only when the
+service is currently disabled, so an edited snapshot cannot enable an arbitrary
+service.
 
 ## Network diagnostics boundary
 
