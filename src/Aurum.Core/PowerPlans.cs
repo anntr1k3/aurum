@@ -124,20 +124,20 @@ public sealed class PowerPlanManager
 
         if (_hasConflictingFeature is not null && await _hasConflictingFeature(cancellationToken))
         {
-            throw new InvalidOperationException("Revert the Aurum core-parking plan before tracking another power-plan change.");
+            throw new InvalidOperationException("Сначала откатите план парковки ядер Aurum, затем меняйте схему питания.");
         }
 
         var existingState = await _repository.GetAsync(cancellationToken);
         if (existingState is not null)
         {
-            throw new InvalidOperationException("A power-plan change is already tracked. Revert it before choosing another plan.");
+            throw new InvalidOperationException("Изменение схемы питания уже отслеживается. Откатите его, прежде чем выбирать другую схему.");
         }
 
         var snapshot = await _store.CaptureAsync(cancellationToken);
         EnsurePlanExists(snapshot, desiredPlanId);
         if (snapshot.ActivePlanId == desiredPlanId)
         {
-            throw new InvalidOperationException("The selected power plan is already active.");
+            throw new InvalidOperationException("Выбранная схема питания уже активна.");
         }
 
         // Claim the rollback point before touching Windows, so an interrupted apply can
@@ -151,7 +151,7 @@ public sealed class PowerPlanManager
         catch (Exception error)
         {
             throw new PowerPlanTransactionException(
-                "The rollback state could not be saved, so the active power plan was left untouched.",
+                    "Не удалось сохранить состояние для откака, поэтому активная схема питания осталась без изменений.",
                 error,
                 true);
         }
@@ -165,8 +165,8 @@ public sealed class PowerPlanManager
             var discarded = await TryRemoveStateAsync(cancellationToken);
             throw new PowerPlanTransactionException(
                 discarded
-                    ? "The power plan could not be changed. Its rollback state was discarded."
-                    : "The power plan could not be changed and its rollback state could not be discarded, so Aurum still reports the change as tracked.",
+                    ? "Не удалось сменить схему питания. Состояние для откака удалено."
+                    : "Не удалось сменить схему питания и удалить состояние для откака, поэтому Aurum по-прежнему считает изменение отслеживаемым.",
                 error,
                 discarded);
         }
@@ -177,7 +177,7 @@ public sealed class PowerPlanManager
         using var _ = await _scope.EnterAsync(cancellationToken);
 
         var state = await _repository.GetAsync(cancellationToken)
-            ?? throw new InvalidOperationException("There is no tracked power-plan change to repair.");
+            ?? throw new InvalidOperationException("Нет отслеживаемого изменения схемы питания, которое можно восстановить.");
         var snapshot = await _store.CaptureAsync(cancellationToken);
         EnsurePlanExists(snapshot, state.DesiredPlanId);
         await _store.SetActiveAsync(state.DesiredPlanId, cancellationToken);
@@ -188,7 +188,7 @@ public sealed class PowerPlanManager
         using var _ = await _scope.EnterAsync(cancellationToken);
 
         var state = await _repository.GetAsync(cancellationToken)
-            ?? throw new InvalidOperationException("There is no tracked power-plan change to revert.");
+            ?? throw new InvalidOperationException("Нет отслеживаемого изменения схемы питания, которое можно откатить.");
         var snapshot = await _store.CaptureAsync(cancellationToken);
         EnsurePlanExists(snapshot, state.OriginalPlanId);
 
@@ -202,8 +202,8 @@ public sealed class PowerPlanManager
             var recovered = await TrySetActiveAsync(state.DesiredPlanId, cancellationToken);
             throw new PowerPlanTransactionException(
                 recovered
-                    ? "The original plan was activated, but saved tracking state could not be removed. The Aurum plan was restored."
-                    : "The original plan was activated, saved tracking state could not be removed, and automatic recovery failed.",
+                    ? "Исходная схема активирована, но сохранённое состояние отслеживания удалить не удалось. Схема Aurum восстановлена."
+                    : "Исходная схема активирована, сохранённое состояние отслеживания удалить не удалось, и автоматическое восстановление не сработало.",
                 error,
                 recovered);
         }
@@ -213,7 +213,7 @@ public sealed class PowerPlanManager
     {
         if (!snapshot.Plans.Any(plan => plan.Id == planId))
         {
-            throw new InvalidOperationException($"Power plan '{planId}' is no longer available in Windows.");
+            throw new InvalidOperationException($"Схема питания '{planId}' больше не доступна в Windows.");
         }
     }
 

@@ -114,7 +114,7 @@ public sealed class JsonTweakStateRepository : ITweakStateRepository
             cancellationToken);
 
         return states is null
-            ? throw new InvalidDataException($"Aurum state file '{_filePath}' is empty or invalid.")
+            ? throw new InvalidDataException($"Файл состояния Aurum '{_filePath}' пуст или повреждён.")
             : new Dictionary<string, PersistedTweakState>(states, StringComparer.Ordinal);
     }
 
@@ -123,7 +123,7 @@ public sealed class JsonTweakStateRepository : ITweakStateRepository
         CancellationToken cancellationToken)
     {
         var directory = Path.GetDirectoryName(_filePath)
-            ?? throw new InvalidOperationException("The state file does not have a parent directory.");
+            ?? throw new InvalidOperationException("У файла состояния нет родительского каталога.");
         Directory.CreateDirectory(directory);
 
         var temporaryPath = _filePath + ".tmp";

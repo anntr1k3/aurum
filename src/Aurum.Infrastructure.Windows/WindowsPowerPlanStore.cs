@@ -26,7 +26,7 @@ public sealed class WindowsPowerPlanStore : IPowerPlanStore
         var result = PowerPlanNativeMethods.PowerSetActiveScheme(IntPtr.Zero, ref planId);
         if (result != 0)
         {
-            throw new Win32Exception((int)result, $"Windows could not activate power plan '{planId}'.");
+            throw new Win32Exception((int)result, $"Windows не смогла активировать схему питания '{planId}'.");
         }
 
         return Task.CompletedTask;
@@ -55,7 +55,7 @@ public sealed class WindowsPowerPlanStore : IPowerPlanStore
 
             if (result != 0)
             {
-                throw new Win32Exception((int)result, "Windows could not enumerate power plans.");
+                throw new Win32Exception((int)result, "Windows не смогла получить список схем питания.");
             }
 
             var planId = new Guid(guidBytes);
@@ -71,7 +71,7 @@ public sealed class WindowsPowerPlanStore : IPowerPlanStore
         var result = PowerPlanNativeMethods.PowerGetActiveScheme(IntPtr.Zero, out var guidPointer);
         if (result != 0 || guidPointer == IntPtr.Zero)
         {
-            throw new Win32Exception((int)result, "Windows did not return the active power plan.");
+            throw new Win32Exception((int)result, "Windows не вернула активную схему питания.");
         }
 
         try

@@ -50,7 +50,7 @@ public sealed class TweakEngine
         {
             if (await _stateRepository.GetAsync(definition.Id, cancellationToken) is not null)
             {
-                throw new InvalidOperationException($"Tweak '{definition.Id}' is already tracked by Aurum.");
+                throw new InvalidOperationException($"Твик '{definition.Id}' уже отслеживается Aurum.");
             }
 
             var snapshots = new List<RegistryStateEntry>(definition.Mutations.Count);
@@ -64,7 +64,7 @@ public sealed class TweakEngine
                     entry.OriginalValue.Value == definition.Mutations[index].DesiredValue).All(static value => value))
             {
                 throw new InvalidOperationException(
-                    $"Tweak '{definition.Id}' is already configured outside Aurum; no original state was claimed.");
+                    $"Твик '{definition.Id}' уже настроен вне Aurum, поэтому исходное состояние не было сохранено.");
             }
 
             // The snapshot has to reach disk before the first mutation. Once a value is
@@ -94,7 +94,7 @@ public sealed class TweakEngine
                 }
 
                 throw new TweakTransactionException(
-                    $"Applying '{definition.Id}' failed. Aurum attempted to restore the original state.",
+                    $"Не удалось применить твик '{definition.Id}'. Aurum попытался восстановить исходное состояние.",
                     operationError,
                     recoveryErrors);
             }
@@ -113,7 +113,7 @@ public sealed class TweakEngine
         try
         {
             var state = await _stateRepository.GetAsync(definition.Id, cancellationToken)
-                ?? throw new InvalidOperationException($"No original state exists for tweak '{definition.Id}'.");
+                ?? throw new InvalidOperationException($"Для твика '{definition.Id}' не сохранено исходное состояние.");
 
             EnsureSnapshotTargetsAreDeclared(definition, state);
 
@@ -121,7 +121,7 @@ public sealed class TweakEngine
             if (recoveryErrors.Count != 0)
             {
                 throw new TweakTransactionException(
-                    $"Reverting '{definition.Id}' was incomplete. Its recovery snapshot was retained.",
+                    $"Откат твика '{definition.Id}' выполнен не полностью. Снимок для восстановления сохранён.",
                     recoveryErrors[0],
                     recoveryErrors);
             }
@@ -143,7 +143,7 @@ public sealed class TweakEngine
         {
             var state = await _stateRepository.GetAsync(definition.Id, cancellationToken)
                 ?? throw new InvalidOperationException(
-                    $"Tweak '{definition.Id}' was not applied by Aurum and cannot be repaired safely.");
+                    $"Твик '{definition.Id}' не был применён через Aurum, поэтому безопасно восстановить его нельзя.");
 
             var currentValues = new List<RegistryStateEntry>(definition.Mutations.Count);
             foreach (var mutation in definition.Mutations)
@@ -164,7 +164,7 @@ public sealed class TweakEngine
             {
                 var recoveryErrors = await RestoreEntriesBestEffortAsync(currentValues, CancellationToken.None);
                 throw new TweakTransactionException(
-                    $"Repairing '{definition.Id}' failed. Aurum attempted to restore the pre-repair state.",
+                    $"Не удалось восстановить твик '{definition.Id}'. Aurum попытался вернуть состояние до восстановления.",
                     operationError,
                     recoveryErrors);
             }
@@ -191,7 +191,7 @@ public sealed class TweakEngine
             if (!definition.Mutations.Any(mutation => IsSameTarget(mutation.Target, entry.Target)))
             {
                 throw new InvalidOperationException(
-                    $"The rollback snapshot for '{definition.Id}' names '{entry.Target.DisplayPath}', which this tweak does not manage. Aurum will not write it.");
+                    $"Снимок откака твика '{definition.Id}' указывает на '{entry.Target.DisplayPath}', который этот твик не изменяет. Aurum не будет туда записывать.");
             }
         }
     }
@@ -216,7 +216,7 @@ public sealed class TweakEngine
                     await _systemStore.WriteRegistryAsync(
                         entry.Target,
                         entry.OriginalValue.Value
-                            ?? throw new InvalidOperationException("An existing registry snapshot has no value."),
+                            ?? throw new InvalidOperationException("Снимок существующего значения реестра не содержит данных."),
                         cancellationToken);
                 }
                 else

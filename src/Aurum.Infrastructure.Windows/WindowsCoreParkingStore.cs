@@ -26,7 +26,7 @@ public sealed class WindowsCoreParkingStore : ICoreParkingStore
         var result = CoreParkingNativeMethods.PowerDuplicateScheme(IntPtr.Zero, ref sourcePlanId, out var targetPointer);
         if (result != 0 || targetPointer == IntPtr.Zero)
         {
-            throw new Win32Exception((int)result, "Windows could not duplicate the active power plan.");
+            throw new Win32Exception((int)result, "Windows не смогла создать копию активной схемы питания.");
         }
 
         Guid targetId;
@@ -39,7 +39,7 @@ public sealed class WindowsCoreParkingStore : ICoreParkingStore
         if (result != 0)
         {
             _ = CoreParkingNativeMethods.PowerDeleteScheme(IntPtr.Zero, ref targetId);
-            throw new Win32Exception((int)result, "Windows duplicated the plan but could not name it.");
+            throw new Win32Exception((int)result, "Windows создала копию схемы, но не смогла присвоить ей имя.");
         }
 
         return Task.FromResult(targetId);
@@ -51,10 +51,10 @@ public sealed class WindowsCoreParkingStore : ICoreParkingStore
         var subgroup = ProcessorSubgroup;
         var minimum = MinimumCores;
         var maximum = MaximumCores;
-        Check(CoreParkingNativeMethods.PowerReadACValueIndex(IntPtr.Zero, ref planId, ref subgroup, ref minimum, out var minimumAc), "read AC minimum cores");
-        Check(CoreParkingNativeMethods.PowerReadACValueIndex(IntPtr.Zero, ref planId, ref subgroup, ref maximum, out var maximumAc), "read AC maximum cores");
-        Check(CoreParkingNativeMethods.PowerReadDCValueIndex(IntPtr.Zero, ref planId, ref subgroup, ref minimum, out var minimumDc), "read DC minimum cores");
-        Check(CoreParkingNativeMethods.PowerReadDCValueIndex(IntPtr.Zero, ref planId, ref subgroup, ref maximum, out var maximumDc), "read DC maximum cores");
+        Check(CoreParkingNativeMethods.PowerReadACValueIndex(IntPtr.Zero, ref planId, ref subgroup, ref minimum, out var minimumAc), "чтение минимума ядер от сети");
+        Check(CoreParkingNativeMethods.PowerReadACValueIndex(IntPtr.Zero, ref planId, ref subgroup, ref maximum, out var maximumAc), "чтение максимума ядер от сети");
+        Check(CoreParkingNativeMethods.PowerReadDCValueIndex(IntPtr.Zero, ref planId, ref subgroup, ref minimum, out var minimumDc), "чтение минимума ядер от батареи");
+        Check(CoreParkingNativeMethods.PowerReadDCValueIndex(IntPtr.Zero, ref planId, ref subgroup, ref maximum, out var maximumDc), "чтение максимума ядер от батареи");
         return Task.FromResult(new CoreParkingSettings(minimumAc, maximumAc, minimumDc, maximumDc));
     }
 
@@ -65,10 +65,10 @@ public sealed class WindowsCoreParkingStore : ICoreParkingStore
         var subgroup = ProcessorSubgroup;
         var minimum = MinimumCores;
         var maximum = MaximumCores;
-        Check(CoreParkingNativeMethods.PowerWriteACValueIndex(IntPtr.Zero, ref planId, ref subgroup, ref minimum, settings.MinimumAc), "write AC minimum cores");
-        Check(CoreParkingNativeMethods.PowerWriteACValueIndex(IntPtr.Zero, ref planId, ref subgroup, ref maximum, settings.MaximumAc), "write AC maximum cores");
-        Check(CoreParkingNativeMethods.PowerWriteDCValueIndex(IntPtr.Zero, ref planId, ref subgroup, ref minimum, settings.MinimumDc), "write DC minimum cores");
-        Check(CoreParkingNativeMethods.PowerWriteDCValueIndex(IntPtr.Zero, ref planId, ref subgroup, ref maximum, settings.MaximumDc), "write DC maximum cores");
+        Check(CoreParkingNativeMethods.PowerWriteACValueIndex(IntPtr.Zero, ref planId, ref subgroup, ref minimum, settings.MinimumAc), "запись минимума ядер от сети");
+        Check(CoreParkingNativeMethods.PowerWriteACValueIndex(IntPtr.Zero, ref planId, ref subgroup, ref maximum, settings.MaximumAc), "запись максимума ядер от сети");
+        Check(CoreParkingNativeMethods.PowerWriteDCValueIndex(IntPtr.Zero, ref planId, ref subgroup, ref minimum, settings.MinimumDc), "запись минимума ядер от батареи");
+        Check(CoreParkingNativeMethods.PowerWriteDCValueIndex(IntPtr.Zero, ref planId, ref subgroup, ref maximum, settings.MaximumDc), "запись максимума ядер от батареи");
         return Task.CompletedTask;
     }
 
@@ -81,13 +81,13 @@ public sealed class WindowsCoreParkingStore : ICoreParkingStore
     public Task DeleteAsync(Guid planId, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        Check(CoreParkingNativeMethods.PowerDeleteScheme(IntPtr.Zero, ref planId), "delete the Aurum power plan");
+        Check(CoreParkingNativeMethods.PowerDeleteScheme(IntPtr.Zero, ref planId), "удаление схемы питания Aurum");
         return Task.CompletedTask;
     }
 
     private static void Check(uint result, string operation)
     {
-        if (result != 0) throw new Win32Exception((int)result, $"Windows could not {operation}.");
+        if (result != 0) throw new Win32Exception((int)result, $"Windows не смогла выполнить операцию: {operation}.");
     }
 }
 

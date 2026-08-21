@@ -23,7 +23,7 @@ public sealed class WindowsRegistryStore : ISystemStore
         }
 
         var rawValue = key.GetValue(target.ValueName, null, RegistryValueOptions.DoNotExpandEnvironmentNames)
-            ?? throw new InvalidOperationException($"Registry value '{target.DisplayPath}' unexpectedly returned null.");
+            ?? throw new InvalidOperationException($"Значение реестра '{target.DisplayPath}' неожиданно оказалось пустым.");
         var valueKind = key.GetValueKind(target.ValueName);
 
         return Task.FromResult(new RegistrySnapshot(true, SerializeValue(rawValue, valueKind)));
@@ -40,7 +40,7 @@ public sealed class WindowsRegistryStore : ISystemStore
 
         using var baseKey = OpenBaseKey(target.Hive);
         using var key = baseKey.CreateSubKey(target.SubKey, writable: true)
-            ?? throw new UnauthorizedAccessException($"Could not open '{target.DisplayPath}' for writing.");
+            ?? throw new UnauthorizedAccessException($"Не удалось открыть '{target.DisplayPath}' для записи. Скорее всего, нужны права администратора.");
 
         var (rawValue, valueKind) = DeserializeValue(value);
         key.SetValue(target.ValueName, rawValue, valueKind);
@@ -87,7 +87,7 @@ public sealed class WindowsRegistryStore : ISystemStore
             RegistryValueKind.Binary => new RegistryValue(
                 Convert.ToBase64String((byte[])rawValue),
                 RegistryValueType.Binary),
-            _ => throw new NotSupportedException($"Registry value kind '{valueKind}' is not supported.")
+            _ => throw new NotSupportedException($"Тип значения реестра '{valueKind}' не поддерживается.")
         };
 
     private static (object RawValue, RegistryValueKind ValueKind) DeserializeValue(RegistryValue value) =>
@@ -103,7 +103,7 @@ public sealed class WindowsRegistryStore : ISystemStore
                 RegistryValueKind.QWord),
             RegistryValueType.MultiString => (
                 JsonSerializer.Deserialize<string[]>(value.Data)
-                    ?? throw new InvalidOperationException("A multi-string value could not be deserialized."),
+                    ?? throw new InvalidOperationException("Не удалось разобрать многострочное значение реестра."),
                 RegistryValueKind.MultiString),
             RegistryValueType.Binary => (Convert.FromBase64String(value.Data), RegistryValueKind.Binary),
             _ => throw new ArgumentOutOfRangeException(nameof(value), value.Type, null)

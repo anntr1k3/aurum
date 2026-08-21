@@ -222,7 +222,7 @@ public sealed class HardwareMonitorService : IDisposable
         var status = new NativeMethods.MemoryStatusEx();
         if (!NativeMethods.GlobalMemoryStatusEx(ref status))
         {
-            throw new InvalidOperationException("Windows did not return memory information.");
+            throw new InvalidOperationException("Windows не вернула сведения об оперативной памяти.");
         }
 
         return new MemoryStatus(status.TotalPhysical, status.AvailablePhysical);
@@ -231,7 +231,7 @@ public sealed class HardwareMonitorService : IDisposable
     private static DriveInfo GetSystemDrive()
     {
         var root = Path.GetPathRoot(Environment.SystemDirectory)
-            ?? throw new InvalidOperationException("The Windows system drive could not be determined.");
+            ?? throw new InvalidOperationException("Не удалось определить системный диск Windows.");
         return new DriveInfo(root);
     }
 

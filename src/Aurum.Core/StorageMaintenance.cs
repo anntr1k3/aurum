@@ -141,7 +141,7 @@ public sealed class StorageMaintenanceManager
         var volumes = await _inventory.CaptureAsync(cancellationToken);
         var volume = volumes.FirstOrDefault(candidate =>
             string.Equals(candidate.RootPath, rootPath, StringComparison.OrdinalIgnoreCase))
-            ?? throw new InvalidOperationException("The selected volume is no longer available.");
+            ?? throw new InvalidOperationException("Выбранный том больше не доступен.");
 
         var availability = EvaluateAvailability(volume, operation);
         if (!availability.CanRun)

@@ -27,7 +27,7 @@ public sealed class DefragStorageOptimizer : IStorageOptimizer
         startInfo.ArgumentList.Add("/V");
 
         using var process = Process.Start(startInfo)
-            ?? throw new InvalidOperationException("Windows defrag utility could not be started.");
+            ?? throw new InvalidOperationException("Не удалось запустить служебную программу дефрагментации Windows.");
         try
         {
             var outputTask = process.StandardOutput.ReadToEndAsync(cancellationToken);

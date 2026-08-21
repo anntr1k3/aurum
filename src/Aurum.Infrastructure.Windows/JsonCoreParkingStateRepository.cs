@@ -20,7 +20,7 @@ public sealed class JsonCoreParkingStateRepository : ICoreParkingStateRepository
             if (!File.Exists(_path)) return null;
             await using var stream = File.OpenRead(_path);
             return await JsonSerializer.DeserializeAsync<PersistedCoreParkingState>(stream, Options, cancellationToken)
-                ?? throw new InvalidDataException("The Aurum core-parking state file is invalid.");
+                ?? throw new InvalidDataException("Файл состояния парковки ядер Aurum повреждён.");
         }
         finally { _gate.Release(); }
     }

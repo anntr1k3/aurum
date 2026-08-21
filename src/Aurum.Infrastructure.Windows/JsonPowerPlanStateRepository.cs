@@ -42,7 +42,7 @@ public sealed class JsonPowerPlanStateRepository : IPowerPlanStateRepository
                        stream,
                        JsonOptions,
                        cancellationToken)
-                   ?? throw new InvalidDataException($"Aurum power-plan state file '{_filePath}' is empty or invalid.");
+                   ?? throw new InvalidDataException($"Файл состояния схем питания Aurum '{_filePath}' пуст или повреждён.");
         }
         finally
         {
@@ -57,7 +57,7 @@ public sealed class JsonPowerPlanStateRepository : IPowerPlanStateRepository
         try
         {
             var directory = Path.GetDirectoryName(_filePath)
-                ?? throw new InvalidOperationException("The power-plan state file does not have a parent directory.");
+                ?? throw new InvalidOperationException("У файла состояния схем питания нет родительского каталога.");
             Directory.CreateDirectory(directory);
 
             var temporaryPath = _filePath + ".tmp";

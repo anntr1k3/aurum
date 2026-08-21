@@ -96,12 +96,12 @@ public sealed class CoreParkingManager
 
         if (await _repository.GetAsync(cancellationToken) is not null)
         {
-            throw new InvalidOperationException("Aurum already tracks a core-parking plan. Revert it first.");
+            throw new InvalidOperationException("Aurum уже отслеживает план парковки ядер. Сначала откатите его.");
         }
 
         if (await _powerPlanRepository.GetAsync(cancellationToken) is not null)
         {
-            throw new InvalidOperationException("Revert the tracked power-plan change before creating a core-parking plan.");
+            throw new InvalidOperationException("Сначала откатите отслеживаемое изменение схемы питания, затем создавайте план парковки ядер.");
         }
 
         var original = await _store.CaptureActiveAsync(cancellationToken);
@@ -138,10 +138,10 @@ public sealed class CoreParkingManager
         using var _ = await _scope.EnterAsync(cancellationToken);
 
         var state = await _repository.GetAsync(cancellationToken)
-            ?? throw new InvalidOperationException("There is no tracked core-parking plan to repair.");
+            ?? throw new InvalidOperationException("Нет отслеживаемого плана парковки ядер, который можно восстановить.");
         if (!await _store.ExistsAsync(state.ManagedPlanId, cancellationToken))
         {
-            throw new InvalidOperationException("The Aurum core-parking plan was deleted outside the application.");
+            throw new InvalidOperationException("План парковки ядер Aurum был удалён вне приложения.");
         }
 
         await _store.WriteSettingsAsync(state.ManagedPlanId, state.DesiredSettings, cancellationToken);
@@ -153,10 +153,10 @@ public sealed class CoreParkingManager
         using var _ = await _scope.EnterAsync(cancellationToken);
 
         var state = await _repository.GetAsync(cancellationToken)
-            ?? throw new InvalidOperationException("There is no tracked core-parking plan to revert.");
+            ?? throw new InvalidOperationException("Нет отслеживаемого плана парковки ядер, который можно откатить.");
         if (!await _store.ExistsAsync(state.OriginalPlanId, cancellationToken))
         {
-            throw new InvalidOperationException("The original power plan no longer exists; automatic rollback is unsafe.");
+            throw new InvalidOperationException("Исходная схема питания больше не существует, поэтому автоматический откат небезопасен.");
         }
 
         await _store.SetActiveAsync(state.OriginalPlanId, cancellationToken);
