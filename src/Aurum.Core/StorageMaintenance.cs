@@ -61,15 +61,18 @@ public sealed class StorageMaintenanceManager
     private readonly IStorageInventoryStore _inventory;
     private readonly IStorageOptimizer _optimizer;
     private readonly Func<bool> _isAdministrator;
+    private readonly IAuditJournal? _auditJournal;
 
     public StorageMaintenanceManager(
         IStorageInventoryStore inventory,
         IStorageOptimizer optimizer,
-        Func<bool> isAdministrator)
+        Func<bool> isAdministrator,
+        IAuditJournal? auditJournal = null)
     {
         _inventory = inventory;
         _optimizer = optimizer;
         _isAdministrator = isAdministrator;
+        _auditJournal = auditJournal;
     }
 
     public Task<IReadOnlyList<StorageVolumeInfo>> CaptureAsync(CancellationToken cancellationToken = default) =>
@@ -149,7 +152,22 @@ public sealed class StorageMaintenanceManager
             throw new InvalidOperationException(availability.Reason);
         }
 
-        return await _optimizer.RunAsync(volume.RootPath, operation, cancellationToken);
+        var result = await _optimizer.RunAsync(volume.RootPath, operation, cancellationToken);
+        if (operation == StorageOperationKind.Retrim)
+        {
+            await AuditJournal.RecordAsync(
+                _auditJournal,
+                "storage",
+                "ReTrim",
+                result.Succeeded ? AuditAction.Applied : AuditAction.Failed,
+                result.Succeeded,
+                result.Succeeded
+                    ? $"Windows ReTrim выполнен для {volume.RootPath}."
+                    : $"ReTrim {volume.RootPath} завершился с кодом {result.ExitCode}.",
+                cancellationToken);
+        }
+
+        return result;
     }
 
 }

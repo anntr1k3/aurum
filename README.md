@@ -63,7 +63,7 @@ Aurum — открытый, прозрачный и полностью обра�
 powershell -ExecutionPolicy Bypass -File .\build_release.ps1
 ```
 
-Скрипт проверяет инварианты, гоняет **61** самотест и публикует `dist\Aurum.exe` (~69.5 МБ, self-contained).
+Скрипт проверяет инварианты, гоняет **63** самотеста и публикует `dist\Aurum.exe` (~69.5 МБ, self-contained).
 
 ```powershell
 dotnet build .\Aurum.sln --configuration Release

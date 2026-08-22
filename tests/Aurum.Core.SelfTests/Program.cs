@@ -36,6 +36,8 @@ internal static partial class Program
             ("Storage maintenance requires explicit administrative context", StorageMaintenanceRequiresAdministratorAsync),
             ("ReTrim rejects rotational media", RetrimRejectsRotationalMediaAsync),
             ("Validated ReTrim passes only the selected volume", ValidatedRetrimUsesSelectedVolumeAsync),
+            ("ReTrim records audit and analyze does not", RetrimRecordsAuditAnalyzeDoesNotAsync),
+            ("Cleanup records deleted files in the audit journal", CleanupRecordsAuditJournalAsync),
             ("Windows storage inventory is readable", WindowsStorageInventoryIsReadableAsync),
             ("Core parking uses an isolated plan and reverts cleanly", CoreParkingApplyAndRevertAsync),
             ("Core parking records its plan before activating it", CoreParkingStateIsPersistedBeforeActivationAsync),
@@ -439,6 +441,78 @@ internal static partial class Program
         Equal(StorageOperationKind.Retrim, optimizer.LastOperation, "Optimizer received the wrong operation.");
         Equal(volume.RootPath, optimizer.LastRootPath, "Optimizer received the wrong volume.");
         True(result.Succeeded, "Fake validated ReTrim did not succeed.");
+    }
+
+    private static async Task RetrimRecordsAuditAnalyzeDoesNotAsync()
+    {
+        var volume = CreateStorageVolume(StorageMediaKind.SolidState, trimSupported: true);
+        var optimizer = new RecordingStorageOptimizer();
+        var journal = new InMemoryAuditJournal();
+        var manager = new StorageMaintenanceManager(
+            new InMemoryStorageInventoryStore(volume),
+            optimizer,
+            () => true,
+            journal);
+
+        await manager.AnalyzeAsync(volume.RootPath);
+        Equal(0, journal.Entries.Count, "Storage analyze must not write the audit journal.");
+
+        var result = await manager.RetrimAsync(volume.RootPath);
+        True(result.Succeeded, "Fake ReTrim did not succeed.");
+        Equal(1, journal.Entries.Count, "Successful ReTrim should write one audit entry.");
+        Equal("storage", journal.Entries[0].Area, "ReTrim audit area is wrong.");
+        Equal("ReTrim", journal.Entries[0].Subject, "ReTrim audit subject is wrong.");
+        Equal(AuditAction.Applied, journal.Entries[0].Action, "Successful ReTrim was not recorded as applied.");
+        True(journal.Entries[0].Succeeded, "Successful ReTrim was recorded as a failure.");
+        True(journal.Entries[0].Detail.Contains(volume.RootPath, StringComparison.OrdinalIgnoreCase),
+            "ReTrim audit detail should name the volume.");
+
+        optimizer.ExitCode = 1;
+        var failed = await manager.RetrimAsync(volume.RootPath);
+        True(!failed.Succeeded, "Forced ReTrim failure was reported as success.");
+        Equal(2, journal.Entries.Count, "Failed ReTrim should write a second audit entry.");
+        Equal(AuditAction.Failed, journal.Entries[1].Action, "Failed ReTrim was not recorded as failed.");
+        True(!journal.Entries[1].Succeeded, "Failed ReTrim was recorded as success.");
+    }
+
+    private static async Task CleanupRecordsAuditJournalAsync()
+    {
+        var root = Path.Combine(Environment.CurrentDirectory, "artifacts", "cleanup-audit-self-test");
+        Directory.CreateDirectory(root);
+        var deletablePath = Path.Combine(root, "old.tmp");
+        await File.WriteAllTextAsync(deletablePath, "delete me");
+        File.SetLastWriteTimeUtc(deletablePath, DateTime.UtcNow.AddDays(-3));
+
+        var category = new CleanupCategory(
+            "user-temp",
+            "Test files",
+            "Self-test only.",
+            root,
+            TimeSpan.FromDays(1));
+        var journal = new InMemoryAuditJournal();
+        var service = new SystemCleanupService([category], journal);
+        try
+        {
+            var scan = await service.ScanAsync([category.Id]);
+            Equal(0, journal.Entries.Count, "Cleanup scan must not write the audit journal.");
+
+            var result = await service.CleanAsync(scan.Candidates);
+            Equal(1, result.DeletedCount, "Cleanup did not delete the scanned file.");
+            Equal(1, journal.Entries.Count, "Cleanup should write one audit entry.");
+            Equal("cleanup", journal.Entries[0].Area, "Cleanup audit area is wrong.");
+            Equal("user-temp", journal.Entries[0].Subject, "Cleanup audit subject is wrong.");
+            Equal(AuditAction.Applied, journal.Entries[0].Action, "Successful cleanup was not recorded as applied.");
+            True(journal.Entries[0].Succeeded, "Successful cleanup was recorded as a failure.");
+            True(journal.Entries[0].Detail.Contains("1 удалено", StringComparison.Ordinal),
+                "Cleanup audit detail should include the deleted count.");
+        }
+        finally
+        {
+            if (Directory.Exists(root))
+            {
+                Directory.Delete(root, true);
+            }
+        }
     }
 
     private static async Task WindowsStorageInventoryIsReadableAsync()
@@ -1356,6 +1430,7 @@ internal sealed class RecordingStorageOptimizer : IStorageOptimizer
 {
     public string? LastRootPath { get; private set; }
     public StorageOperationKind? LastOperation { get; private set; }
+    public int ExitCode { get; set; }
 
     public Task<StorageOperationResult> RunAsync(
         string rootPath,
@@ -1365,7 +1440,7 @@ internal sealed class RecordingStorageOptimizer : IStorageOptimizer
         cancellationToken.ThrowIfCancellationRequested();
         LastRootPath = rootPath;
         LastOperation = operation;
-        return Task.FromResult(new StorageOperationResult(operation, rootPath, 0, "ok", DateTimeOffset.Now));
+        return Task.FromResult(new StorageOperationResult(operation, rootPath, ExitCode, "ok", DateTimeOffset.Now));
     }
 }
 

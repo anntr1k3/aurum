@@ -999,48 +999,48 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         // 1. Гейминг и задержки
         SimpleFeatures.Add(new SimpleFeatureItemViewModel(
             "msi",
-            "Аппаратные прерывания MSI (GPU & Сеть)",
+            "Аппаратные прерывания MSI (GPU и сеть)",
             "gaming",
             "Гейминг и задержки",
             "⚡",
-            "Переводит видеокарту и сетевую карту в режим Message Signaled Interrupts с высоким приоритетом, устраняя очереди IRQ и снижая DPC Latency.",
-            ["🚀 eSports Latency", "🛡️ Безопасно", "⚡ Рекомендуется"],
+            "Включает Message Signaled Interrupts и высокий приоритет для видеокарты и сетевого адаптера из живого инвентаря. Исходные значения сохраняются и откатываются.",
+            ["обратимо", "живой инвентарь"],
             () => Msi.ApplyGamingPresetAsync(),
             () => Msi.RevertAsync(),
             ReportStatus));
 
         SimpleFeatures.Add(new SimpleFeatureItemViewModel(
             "timer",
-            "Высокоточный системный таймер 0.500 мс (2000 Гц)",
+            "Системный таймер 0.5 мс",
             "gaming",
             "Гейминг и задержки",
             "⏱️",
-            "Повышает частоту системного таймера до 2000 Гц для синхронизации игрового цикла с высокоскоростными мышами (1000–8000 Гц).",
-            ["⚡ 2000 Hz", "🎯 Плавность ввода", "🚀 eSports"],
+            "Держит запрос NtSetTimerResolution 0.5 мс, пока процесс запущен. Снимается без перезагрузки. Имеет смысл замерить до и после, а не включать «на всякий случай».",
+            ["по запросу процесса", "сброс без перезагрузки"],
             () => Task.FromResult(Timer.SetResolution(0.5)),
             () => Task.FromResult(Timer.ResetResolution()),
             ReportStatus));
 
         SimpleFeatures.Add(new SimpleFeatureItemViewModel(
             "win32-priority",
-            "Квантовый приоритет процессора (Win32Priority 0x26)",
+            "Кванты процессора для активного окна (Win32PrioritySeparation)",
             "gaming",
             "Гейминг и задержки",
             "🧠",
-            "Выделяет максимальные короткие кванты процессорного времени активному окну игры (Quantum Boost).",
-            ["🎮 Quantum Boost", "⚡ Рекомендуется"],
+            "Ставит Win32PrioritySeparation в значение коротких квантов для активного окна. Это параметр планировщика Windows, не обещание FPS.",
+            ["реестр", "обратимо"],
             () => ApplyTweakByIdAsync(TweakIds.Kernel.Win32PrioritySeparation),
             () => RevertTweakByIdAsync(TweakIds.Kernel.Win32PrioritySeparation),
             ReportStatus));
 
         SimpleFeatures.Add(new SimpleFeatureItemViewModel(
             "system-responsiveness",
-            "100% мощности процессора игре (Responsiveness 0)",
+            "Без резерва процессора для мультимедиа (SystemResponsiveness 0)",
             "gaming",
             "Гейминг и задержки",
             "🎯",
-            "Отключает 20% системное резервирование мощности процессора для фоновых мультимедийных служб.",
-            ["🎮 100% CPU Game", "⚡ Рекомендуется"],
+            "Отключает 20% резерв процессора для фоновых мультимедийных служб. Не обещает рост FPS.",
+            ["SystemResponsiveness 0", "обратимо"],
             () => ApplyTweakByIdAsync(TweakIds.Kernel.SystemResponsiveness),
             () => RevertTweakByIdAsync(TweakIds.Kernel.SystemResponsiveness),
             ReportStatus));
@@ -1051,8 +1051,8 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             "gaming",
             "Гейминг и задержки",
             "🌐",
-            "Снимает искусственное ограничение пропускной способности не-мультимедийных сетевых пакетов для стабильного пинга.",
-            ["⚡ Низкий пинг", "🌐 Без джиттера"],
+            "Отключает NetworkThrottlingIndex для немальтимедийного трафика — документированный параметр Windows. Не обещает пинг.",
+            ["документировано", "обратимо"],
             () => ApplyTweakByIdAsync(TweakIds.Network.DisableThrottling),
             () => RevertTweakByIdAsync(TweakIds.Network.DisableThrottling),
             ReportStatus));
@@ -1063,8 +1063,8 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             "gaming",
             "Гейминг и задержки",
             "🚀",
-            "Отключает встроенную фоновую запись экрана Xbox и оверлей, устраняя микростаттеры и экономя ресурсы GPU.",
-            ["🛡️ Без фоновой записи", "🎮 FPS"],
+            "Отключает фоновую запись Xbox Game DVR и оверлей Game Bar. Это снимает фоновую нагрузку, а не гарантирует FPS.",
+            ["без фоновой записи", "обратимо"],
             async () =>
             {
                 var capture = await ApplyTweakByIdAsync(TweakIds.Gaming.DisableBackgroundCapture);
@@ -1082,12 +1082,12 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         // 2. Система и ядро
         SimpleFeatures.Add(new SimpleFeatureItemViewModel(
             "core-parking",
-            "Распарковка 100% ядер процессора (Core Parking)",
+            "Распарковка ядер процессора (Core Parking)",
             "system",
             "Система и ядро",
             "🔌",
-            "Держит все ядра процессора активными в изолированной схеме питания Aurum, исключая задержки пробуждения ядер.",
-            ["⚡ 100% Unpark", "🚀 Моментальный отклик"],
+            "В изолированной схеме питания Aurum держит ядра незапаркованными. На гибридных CPU полное распарковывание потребует отдельного подтверждения. Может увеличить нагрев и шум.",
+            ["изолированный клон", "обратимо"],
             () =>
             {
                 CoreParking.MinimumAc = 100;
@@ -1106,7 +1106,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             "Система и ядро",
             "💾",
             "Запрещает операционной системе сбрасывать компоненты ядра и системных драйверов в файл подкачки на диск.",
-            ["🧠 RAM Kernel", "⚡ Быстрый отклик"],
+            ["DisablePagingExecutive", "обратимо"],
             () => ApplyTweakByIdAsync(TweakIds.Kernel.DisablePagingExecutive),
             () => RevertTweakByIdAsync(TweakIds.Kernel.DisablePagingExecutive),
             ReportStatus));
@@ -1117,20 +1117,20 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             "system",
             "Система и ядро",
             "🖱️",
-            "Возвращает быстрое классическое контекстное меню по правому клику мыши без лишнего подменю «Показать дополнительные параметры».",
-            ["⚡ Мгновенный клик", "🖱️ Удобство"],
+            "Возвращает классическое контекстное меню по правому клику без подменю «Показать дополнительные параметры».",
+            ["Windows 11", "обратимо"],
             () => ApplyTweakByIdAsync(TweakIds.Explorer.ClassicContextMenu),
             () => RevertTweakByIdAsync(TweakIds.Explorer.ClassicContextMenu),
             ReportStatus));
 
         SimpleFeatures.Add(new SimpleFeatureItemViewModel(
             "ssd-trim",
-            "Оптимизация SSD ячеек (Безопасный ReTrim)",
+            "Windows ReTrim для SSD",
             "system",
             "Система и ядро",
             "💾",
-            "Отправляет команду очистки неиспользуемых блоков TRIM на все SSD/NVMe накопители с аппаратной защитой от запуска на HDD.",
-            ["⚡ Скорость SSD", "🛡️ Защита HDD"],
+            "Запускает штатный ReTrim Windows на томах, которые подтвердили TRIM. На HDD не предлагается. Это обслуживание, а не разгон диска.",
+            ["штатный ReTrim", "не для HDD"],
             () => Storage.OptimizeAllSsdDirectAsync(),
             // ReTrim is a one-shot maintenance command with no inverse, so there is
             // nothing to undo. SyncSimpleFeatureStates always resets this toggle to off.
@@ -1143,8 +1143,8 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             "system",
             "Система и ядро",
             "🛡️",
-            "Отключает сканирование файлов в реальном времени и SmartScreen для устранения микрофризов при подгрузке игровых ассетов.",
-            ["⚡ Производительность", "🛡️ Real-Time"],
+            "Отключает проверку в реальном времени и SmartScreen. Это ослабляет защиту системы.",
+            ["ослабляет защиту", "обратимо"],
             () => ApplyTweakByIdAsync(TweakIds.Gaming.DisableDefenderRealtime),
             () => RevertTweakByIdAsync(TweakIds.Gaming.DisableDefenderRealtime),
             ReportStatus));
@@ -1156,7 +1156,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             "Система и ядро",
             "🛠️",
             "Отключает диалоговые окна подтверждения администратора и затемнение рабочего стола (Secure Desktop).",
-            ["⚡ Без пауз", "🛠️ UAC"],
+            ["UAC", "обратимо"],
             () => ApplyTweakByIdAsync(TweakIds.Gaming.DisableUac),
             () => RevertTweakByIdAsync(TweakIds.Gaming.DisableUac),
             ReportStatus));
@@ -1167,8 +1167,8 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             "system",
             "Система и ядро",
             "🔄",
-            "Запрещает операционной системе автоматически скачивать и устанавливать обновления в фоне во время матчей.",
-            ["⚡ Стабильный пинг", "🛡️ Без скачков CPU"],
+            "Останавливает автоматическую загрузку и установку обновлений Windows.",
+            ["обратимо"],
             () => ApplyTweakByIdAsync(TweakIds.Gaming.DisableWindowsUpdate),
             () => RevertTweakByIdAsync(TweakIds.Gaming.DisableWindowsUpdate),
             ReportStatus));
@@ -1179,8 +1179,8 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             "system",
             "Система и ядро",
             "💾",
-            "Отключает автоматические теневые копии томов для экономии ресурса ячеек SSD/NVMe и дискового пространства.",
-            ["💾 Экономия SSD", "⚡ Без VSS"],
+            "Отключает автоматические теневые копии томов. Точки восстановления после этого не создаются.",
+            ["VSS", "обратимо"],
             () => ApplyTweakByIdAsync(TweakIds.Gaming.DisableSystemRestore),
             () => RevertTweakByIdAsync(TweakIds.Gaming.DisableSystemRestore),
             ReportStatus));
@@ -1192,8 +1192,8 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             "privacy",
             "Приватность",
             "🛡️",
-            "Минимизирует отправку диагностических данных и телеметрии в Microsoft, отключая рекламный ID, запросы отзывов и персонализацию.",
-            ["🛡️ Приватность", "🔒 0% телеметрии"],
+            "Уменьшает отправку диагностических данных в Microsoft: рекламный ID, запросы отзывов и персонализацию.",
+            ["приватность", "обратимо"],
             async () =>
             {
                 var advertisingId = await ApplyTweakByIdAsync(TweakIds.Privacy.DisableAdvertisingId);
@@ -1218,8 +1218,8 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             "privacy",
             "Приватность",
             "🔍",
-            "Убирает рекламу и медленный веб-поиск из меню Пуск, оставляя только мгновенный локальный поиск программ и файлов.",
-            ["⚡ Мгновенный поиск", "🛡️ Без рекламы Bing"],
+            "Убирает веб-поиск Bing из меню «Пуск», оставляя локальный поиск программ и файлов.",
+            ["без Bing", "обратимо"],
             () => ApplyTweakByIdAsync(TweakIds.Privacy.DisableSearchWebResults),
             () => RevertTweakByIdAsync(TweakIds.Privacy.DisableSearchWebResults),
             ReportStatus));
@@ -1230,14 +1230,14 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     public async Task ApplySimpleGamingPresetAsync()
     {
         if (!_confirm(
-            "Применить рекомендуемый «Игровой пресет Aurum»?\n\n" +
+            "Применить комплект для таймера, MSI и ядра?\n\n" +
             "Будут настроены:\n" +
-            "• Высокоточный системный таймер 0.5 мс (2000 Гц)\n" +
-            "• Аппаратные MSI-прерывания для видеокарты\n" +
-            "• Разблокировка всех ядер процессора (Core Parking 100%)\n" +
-            "• Приоритеты ядра Win32PrioritySeparation (0x26)\n" +
-            "• Снятие сетевого троттлинга и выключение GameDVR\n\n" +
-            "Все параметры полностью обратимы."))
+            "• Системный таймер 0.5 мс, пока Aurum запущен\n" +
+            "• MSI для видеокарты и сети из живого инвентаря\n" +
+            "• Core Parking 100% в изолированной схеме Aurum\n" +
+            "• Win32PrioritySeparation и снятие сетевого троттлинга\n" +
+            "• Отключение Game DVR\n\n" +
+            "Это не гарантия FPS. Все параметры обратимы."))
         {
             return;
         }
@@ -1266,7 +1266,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             }
 
             SyncSimpleFeatures();
-            ReportStatus("⚡ Рекомендуемый игровой пресет Aurum успешно применён!", false);
+            ReportStatus("Комплект таймера, MSI и ядра применён.", false);
         }
         catch (Exception ex)
         {
@@ -1466,7 +1466,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     public async Task ApplyAllProcessorTimerGamingAsync()
     {
         if (IsBusy) return;
-        if (!_confirm("Применить полный комплекс для процессора, прерываний и таймера?\n\n• Системный таймер: 0.500 мс (2000 Гц)\n• Режим MSI: High priority для GPU и Сети\n• Разблокировка ядер (Core Parking): 100% активны\n\nВсе параметры полностью обратимы."))
+        if (!_confirm("Применить комплект таймера, MSI и Core Parking?\n\n• Системный таймер: 0.500 мс, пока Aurum запущен\n• MSI: высокий приоритет для GPU и сети из живого инвентаря\n• Core Parking: 100% в изолированной схеме Aurum\n\nЭто не гарантия FPS. Все параметры обратимы."))
         {
             return;
         }
@@ -1477,7 +1477,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             Timer.Set05MsCommand.Execute(null);
             await Msi.ApplyGamingPresetDirectAsync();
             await CoreParking.ApplyDirectAsync();
-            ReportStatus("Комплекс оптимизации процессора и таймера успешно активирован.", false);
+            ReportStatus("Комплект таймера, MSI и Core Parking применён.", false);
         }
         catch (Exception ex)
         {

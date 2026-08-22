@@ -30,7 +30,7 @@ public partial class MainWindow : Window
             engine,
             systemProbe,
             new AtlasHealthService(),
-            new SystemCleanupService(),
+            new SystemCleanupService(auditJournal: auditJournal),
             new HardwareMonitorService(),
             new PowerPlanManager(
                 new WindowsPowerPlanStore(),
@@ -41,7 +41,8 @@ public partial class MainWindow : Window
             new StorageMaintenanceManager(
                 new WindowsStorageInventoryStore(),
                 new DefragStorageOptimizer(),
-                () => systemProbe.Capture().IsAdministrator),
+                () => systemProbe.Capture().IsAdministrator,
+                auditJournal),
             new StorageTuningManager(
                 new WindowsStorageTuningStore(),
                 new JsonStorageTuningStateRepository(),

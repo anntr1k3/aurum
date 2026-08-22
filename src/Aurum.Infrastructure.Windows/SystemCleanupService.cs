@@ -1,5 +1,6 @@
 using System.Runtime.InteropServices;
 using Microsoft.Win32.SafeHandles;
+using Aurum.Core;
 
 namespace Aurum.Infrastructure.Windows;
 
@@ -36,8 +37,11 @@ public sealed class SystemCleanupService
 {
     private const int MaximumCandidates = 50_000;
     private readonly IReadOnlyDictionary<string, CleanupCategory> _categories;
+    private readonly IAuditJournal? _auditJournal;
 
-    public SystemCleanupService(IReadOnlyList<CleanupCategory>? categories = null)
+    public SystemCleanupService(
+        IReadOnlyList<CleanupCategory>? categories = null,
+        IAuditJournal? auditJournal = null)
     {
         Categories = categories ?? CreateDefaultCategories();
         if (Categories.Select(static category => category.Id).Distinct(StringComparer.Ordinal).Count() != Categories.Count)
@@ -46,6 +50,7 @@ public sealed class SystemCleanupService
         }
 
         _categories = Categories.ToDictionary(static category => category.Id, StringComparer.Ordinal);
+        _auditJournal = auditJournal;
     }
 
     public IReadOnlyList<CleanupCategory> Categories { get; }
@@ -55,10 +60,24 @@ public sealed class SystemCleanupService
         CancellationToken cancellationToken = default) =>
         Task.Run(() => Scan(categoryIds, cancellationToken), cancellationToken);
 
-    public Task<CleanupExecutionResult> CleanAsync(
+    public async Task<CleanupExecutionResult> CleanAsync(
         IReadOnlyCollection<CleanupCandidate> candidates,
-        CancellationToken cancellationToken = default) =>
-        Task.Run(() => Clean(candidates, cancellationToken), cancellationToken);
+        CancellationToken cancellationToken = default)
+    {
+        var result = await Task.Run(() => Clean(candidates, cancellationToken), cancellationToken);
+        var categories = string.Join(", ",
+            candidates.Select(static candidate => candidate.CategoryId).Distinct(StringComparer.Ordinal));
+        var succeeded = result.Errors.Count == 0;
+        await AuditJournal.RecordAsync(
+            _auditJournal,
+            "cleanup",
+            string.IsNullOrWhiteSpace(categories) ? "temp" : categories,
+            succeeded ? AuditAction.Applied : AuditAction.Failed,
+            succeeded,
+            $"{result.DeletedCount} удалено, {result.SkippedCount} пропущено, {result.FreedBytes} байт.",
+            cancellationToken);
+        return result;
+    }
 
     private CleanupScanResult Scan(IReadOnlyCollection<string> categoryIds, CancellationToken cancellationToken)
     {
