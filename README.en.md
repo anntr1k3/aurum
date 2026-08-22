@@ -19,6 +19,8 @@ Instead of opaque "magic" scripts or destructive tweaks, Aurum adheres to a stri
 - **Nordic Blue Design:** Clean, distraction-free modern UI with **Unbounded** & **Onest** typography.
 - **Zero Telemetry:** Completely offline, no background telemetry, and no remote script execution.
 
+The current Windows x64 build is on [GitHub Releases](https://github.com/anntr1k3/aurum/releases/latest): a single `Aurum.exe`, no installer.
+
 ---
 
 ## 🚀 Key Modules & Capabilities
@@ -80,15 +82,16 @@ Run the automated build script:
 powershell -ExecutionPolicy Bypass -File .\build_release.ps1
 ```
 This script will:
-1. Run the entire suite of **38 self-tests**.
-2. Compile and publish a standalone single-file binary: `dist\Aurum.exe` (~72.8 MB, self-contained with embedded runtime).
+1. Verify static project invariants (XAML resource keys resolve, every self-test is registered).
+2. Run the entire suite of **59 self-tests**.
+3. Compile and publish a standalone single-file binary: `dist\Aurum.exe` (~69.5 MB, self-contained with embedded runtime).
 
 ### Manual Build
 ```powershell
 # Build solution
 dotnet build .\Aurum.sln --configuration Release
 
-# Run self-tests (38/38 tests)
+# Run self-tests (59/59 tests)
 dotnet run --project .\tests\Aurum.Core.SelfTests
 
 # Run app

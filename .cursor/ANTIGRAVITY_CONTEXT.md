@@ -30,12 +30,13 @@ Aurum/
 │   ├── Aurum.Infrastructure.Windows/   # Win32/P-Invoke, реестр, SCM, Power API, ntdll, JSON-хранилища
 │   └── Aurum.App/                      # WPF-приложение (MVVM, DataBinding, XAML, шрифты, стили)
 ├── tests/
-│   └── Aurum.Core.SelfTests/           # 35 автономных модульных и интеграционных тестов
-├── website/                            # Статический современный промо-сайт (HTML5, CSS3, JS, Fonts)
-├── docs/                               # Архитектурная документация, product brief, roadmap
-├── dist/                               # Собранные релизные бинарники и пакеты (Single-File Aurum.exe)
-├── build_release.ps1                   # Скрипт сборки и упаковки релиза
-└── Aurum.sln                           # Решение Visual Studio / .NET SDK
+│   └── Aurum.Core.SelfTests/           # 59 автономных модульных и интеграционных тестов
+├── website/                            # Статический промо-сайт (HTML, CSS, JS, WOFF2)
+├── docs/                               # product, architecture, roadmap
+├── tools/                              # Verify-Invariants.ps1
+├── .cursor/                            # навыки агента и handover-контекст
+├── build_release.ps1                   # Скрипт сборки релиза
+└── Aurum.sln
 ```
 
 ### Зависимости и правила изоляции:
