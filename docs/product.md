@@ -49,13 +49,9 @@ an explicitly opened technical layer and must not dominate the default screen.
 
 ## Next milestones
 
-Shipped through tagged `v1.0.1`: registry tweaks, Atlas checks, cleanup,
-monitoring, power plans, Core Parking, storage retrim and NTFS/SysMain toggles,
-service mutations, DNS/TCP tuning, MSI, and the system timer.
-
-On `main`, not yet in a GitHub Release: audit coverage beyond tweaks, crash-log
-open, service-batch dependant refusal, exclusive cleanup deletes, and DNS
-adapter-id matching.
+Shipped through tagged `v1.0.2`: monitoring, power plans, Core Parking with a
+hybrid-CPU unpark warning, storage retrim, service mutations, DNS/TCP tuning,
+MSI, system timer, audit log across the write paths, and snapshot allowlists.
 
 Signed binaries, reproducible builds, and snapshot-format migration guarantees
 remain later work. The detailed backlog is in [`roadmap.md`](roadmap.md).

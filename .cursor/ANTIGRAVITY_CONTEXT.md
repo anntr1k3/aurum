@@ -30,7 +30,7 @@ Aurum/
 │   ├── Aurum.Infrastructure.Windows/   # Win32/P-Invoke, реестр, SCM, Power API, ntdll, JSON-хранилища
 │   └── Aurum.App/                      # WPF-приложение (MVVM, DataBinding, XAML, шрифты, стили)
 ├── tests/
-│   └── Aurum.Core.SelfTests/           # 59 автономных модульных и интеграционных тестов
+│   └── Aurum.Core.SelfTests/           # 61 автономных модульных и интеграционных тестов
 ├── website/                            # Статический промо-сайт (HTML, CSS, JS, WOFF2)
 ├── docs/                               # product, architecture, roadmap
 ├── tools/                              # Verify-Invariants.ps1
@@ -72,7 +72,7 @@ Aurum/
 * **Файлы:** `src/Aurum.Core/SystemTimer.cs`, `src/Aurum.Infrastructure.Windows/WindowsSystemTimerService.cs`, `src/Aurum.App/ViewModels/SystemTimerViewModel.cs`
 * **Возможности:**
   * Нативное управление через P/Invoke `ntdll.dll` (`NtQueryTimerResolution`, `NtSetTimerResolution`).
-  * Пресеты: `0.500 мс (2000 Гц)` (eSports), `1.000 мс (1000 Гц)`, `По умолчанию Windows (~15.625 мс)`.
+  * Пресеты: `0.5 мс` и `1.0 мс` по запросу процесса, сброс к значению Windows без перезагрузки. Это не обязательный шаг и не обещание FPS.
   * Отображение частоты опроса в реальном времени.
   * Управление параметром реестра `GlobalTimerResolutionRequests` (Windows 11).
 

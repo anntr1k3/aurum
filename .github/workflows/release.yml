@@ -7,9 +7,9 @@ on:
   workflow_dispatch:
     inputs:
       tag_name:
-        description: "Release tag name (e.g. v1.0.1)"
+        description: "Release tag name (e.g. v1.0.2)"
         required: true
-        default: "v1.0.1"
+        default: "v1.0.2"
 
 permissions:
   contents: write
@@ -66,12 +66,12 @@ jobs:
             $tag = $env:GITHUB_REF -replace "refs/tags/", ""
           } else {
             $tag = "${{ github.event.inputs.tag_name }}"
-            if ([string]::IsNullOrWhiteSpace($tag)) { $tag = "v1.0.1" }
+            if ([string]::IsNullOrWhiteSpace($tag)) { $tag = "v1.0.2" }
           }
           echo "tag=$tag" >> $env:GITHUB_OUTPUT
 
       - name: Create GitHub Release and Upload Binary
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ steps.vars.outputs.tag }}
           name: "Aurum ${{ steps.vars.outputs.tag }}"

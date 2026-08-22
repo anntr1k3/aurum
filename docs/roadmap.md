@@ -9,7 +9,7 @@ implemented until they are present in the application and covered by checks.
 - Elevation warning and restart-as-administrator before writes.
 - Service, MSI, power, Core Parking, DNS, and storage mutations with rollback snapshots.
 - Offline AtlasOS structure checks and preview-first cleanup.
-- Hardware monitoring slice and a published single-file Windows build (`v1.0.1`).
+- Hardware monitoring slice and a published single-file Windows build (`v1.0.2`).
 
 ## 1. Hardware monitoring
 
@@ -98,7 +98,9 @@ Core Parking workflow rather than modifying built-in schemes.
 implemented. Aurum reads `CPMINCORES` and `CPMAXCORES` for AC/DC, validates the
 0–100% ranges, applies them only to a cloned scheme, detects plan/value drift,
 and restores the original scheme on rollback. Heterogeneous-core topology
-guidance and live parked-core visualization remain planned refinements.
+is detected: the Core Parking surface warns, and applying 100% unpark requires
+an extra confirmation. Live parked-core visualization remains a planned
+refinement.
 
 - Enumerate all Windows power plans and identify the active plan.
 - Allow selecting an existing plan while remembering the previous plan.
@@ -147,15 +149,13 @@ throughput benchmarks, and DNS comparison remain planned.
 
 ## Delivery order
 
-Shipped through `v1.0.1`: monitoring, power plans, Core Parking, storage retrim,
+Shipped through `v1.0.2`: monitoring, power plans, Core Parking, storage retrim,
 service mutations, network diagnostics and DNS/TCP tuning, MSI, system timer,
-audit log for tweaks, snapshot allowlists.
+audit log, snapshot allowlists, hybrid-CPU unpark warning.
 
 Next:
 
-1. Hygiene around the released product: crash-log open, audit remaining managers,
-   canonical site URLs, Node 24 GitHub Actions.
-2. Trust on existing write paths: service batch dependants, exclusive cleanup
-   deletes, DNS adapter-id matching.
-3. Site delivery: OG cover, font subset, tag-driven releases.
-4. No new tweak categories until the items above stay green.
+1. Deepen existing surfaces: GPU driver/VRAM inventory, Optimize Drives/SMART
+   diagnostics, RSS/RSC inventory, AC vs battery guidance.
+2. Signed `Aurum.exe` and reproducible builds.
+3. No new tweak categories until the items above stay green.

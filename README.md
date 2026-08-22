@@ -1,4 +1,4 @@
-# Aurum — компаньон AtlasOS (v1.0.1)
+# Aurum — компаньон AtlasOS (v1.0.2)
 
 [![Build Status](https://github.com/anntr1k3/aurum/actions/workflows/build.yml/badge.svg)](https://github.com/anntr1k3/aurum/actions/workflows/build.yml)
 [![GitHub Pages](https://github.com/anntr1k3/aurum/actions/workflows/pages.yml/badge.svg)](https://anntr1k3.github.io/aurum/)
@@ -63,7 +63,7 @@ Aurum — открытый, прозрачный и полностью обра�
 powershell -ExecutionPolicy Bypass -File .\build_release.ps1
 ```
 
-Скрипт проверяет инварианты, гоняет **59** самотестов и публикует `dist\Aurum.exe` (~69.5 МБ, self-contained).
+Скрипт проверяет инварианты, гоняет **61** самотест и публикует `dist\Aurum.exe` (~69.5 МБ, self-contained).
 
 ```powershell
 dotnet build .\Aurum.sln --configuration Release

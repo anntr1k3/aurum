@@ -59,7 +59,8 @@ and maximum unparked-processor percentages for AC and DC, activates the clone,
 and persists both GUIDs. Failure during creation restores the original plan and
 removes the incomplete clone. Revert activates the original before deleting the
 managed clone. The regular power-plan tracker and Core Parking tracker are
-mutually exclusive to prevent competing rollback owners.
+mutually exclusive to prevent competing rollback owners. Heterogeneous
+processors show a warning, and applying a 100% unpark requires confirmation.
 
 ## Service analysis boundary
 

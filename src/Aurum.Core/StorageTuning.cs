@@ -37,16 +37,19 @@ public sealed class StorageTuningManager
     private readonly IStorageTuningStore _store;
     private readonly IStorageTuningStateRepository _stateRepository;
     private readonly Func<bool> _isAdministrator;
+    private readonly IAuditJournal? _auditJournal;
     private readonly SemaphoreSlim _gate = new(1, 1);
 
     public StorageTuningManager(
         IStorageTuningStore store,
         IStorageTuningStateRepository stateRepository,
-        Func<bool> isAdministrator)
+        Func<bool> isAdministrator,
+        IAuditJournal? auditJournal = null)
     {
         _store = store ?? throw new ArgumentNullException(nameof(store));
         _stateRepository = stateRepository ?? throw new ArgumentNullException(nameof(stateRepository));
         _isAdministrator = isAdministrator ?? throw new ArgumentNullException(nameof(isAdministrator));
+        _auditJournal = auditJournal;
     }
 
     public Task<StorageTuningSnapshot> CaptureSnapshotAsync(CancellationToken cancellationToken = default) =>
@@ -69,6 +72,10 @@ public sealed class StorageTuningManager
             }
 
             await _store.Set8dot3DisabledAsync(disable, cancellationToken);
+            await AuditJournal.RecordAsync(
+                _auditJournal, "storage", "8.3", AuditAction.Applied, true,
+                disable ? "Короткие имена NTFS отключены." : "Короткие имена NTFS включены.",
+                cancellationToken);
         }
         finally
         {
@@ -93,6 +100,10 @@ public sealed class StorageTuningManager
             }
 
             await _store.SetLastAccessDisabledAsync(disable, cancellationToken);
+            await AuditJournal.RecordAsync(
+                _auditJournal, "storage", "LastAccess", AuditAction.Applied, true,
+                disable ? "LastAccess отключён." : "LastAccess включён.",
+                cancellationToken);
         }
         finally
         {
@@ -117,6 +128,10 @@ public sealed class StorageTuningManager
             }
 
             await _store.SetHibernationDisabledAsync(disable, cancellationToken);
+            await AuditJournal.RecordAsync(
+                _auditJournal, "storage", "Hibernation", AuditAction.Applied, true,
+                disable ? "Гибернация отключена." : "Гибернация включена.",
+                cancellationToken);
         }
         finally
         {
@@ -141,6 +156,10 @@ public sealed class StorageTuningManager
             }
 
             await _store.SetSysMainDisabledAsync(disable, cancellationToken);
+            await AuditJournal.RecordAsync(
+                _auditJournal, "storage", "SysMain", AuditAction.Applied, true,
+                disable ? "SysMain отключён." : "SysMain включён.",
+                cancellationToken);
         }
         finally
         {
@@ -188,6 +207,10 @@ public sealed class StorageTuningManager
             }
 
             await _stateRepository.RemoveAsync(cancellationToken);
+            await AuditJournal.RecordAsync(
+                _auditJournal, "storage", "settings", AuditAction.Reverted, true,
+                "Исходные параметры накопителей восстановлены.",
+                cancellationToken);
             return true;
         }
         finally

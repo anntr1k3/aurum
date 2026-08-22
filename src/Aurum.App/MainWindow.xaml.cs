@@ -25,6 +25,7 @@ public partial class MainWindow : Window
         // section for their mutual-exclusion guards to hold.
         var powerPlanScope = new PowerPlanTransactionScope();
 
+        var processorTopology = new WindowsProcessorTopology();
         _viewModel = new MainViewModel(
             engine,
             systemProbe,
@@ -44,7 +45,8 @@ public partial class MainWindow : Window
             new StorageTuningManager(
                 new WindowsStorageTuningStore(),
                 new JsonStorageTuningStateRepository(),
-                () => systemProbe.Capture().IsAdministrator),
+                () => systemProbe.Capture().IsAdministrator,
+                auditJournal),
             new CoreParkingManager(
                 new WindowsCoreParkingStore(),
                 coreParkingStateRepository,
@@ -71,6 +73,7 @@ public partial class MainWindow : Window
                 auditJournal),
             new WindowsSystemTimerService(),
             auditJournal,
+            processorTopology,
             message => MessageBox.Show(
                 this,
                 message,

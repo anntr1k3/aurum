@@ -1375,6 +1375,7 @@
                                 <StackPanel Margin="0,0,16,0">
                                     <TextBlock Text="CORE PARKING · РАСШИРЕННЫЙ РЕЖИМ" Foreground="{StaticResource MutedBrush}" FontSize="10" FontWeight="Bold" />
                                     <TextBlock Margin="0,4,0,0" Text="{Binding CoreParking.Summary}" Foreground="{StaticResource AccentBrush}" FontSize="12" TextTrimming="CharacterEllipsis" />
+                                    <TextBlock Margin="0,8,0,0" Text="{Binding CoreParking.HeterogeneousGuidance}" Foreground="{StaticResource WarningBrush}" FontSize="12" TextWrapping="Wrap" Visibility="{Binding CoreParking.IsHeterogeneous, Converter={StaticResource BooleanToVisibilityConverter}}" />
                                 </StackPanel>
                                 <StackPanel Grid.Column="1" Orientation="Horizontal">
                                     <Button Margin="0,0,8,0" Padding="12,7" Style="{StaticResource BaseButton}" Command="{Binding CoreParking.RefreshCommand}" Content="Обновить" />

@@ -43,6 +43,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         MsiModeManager msiModeManager,
         ISystemTimerService systemTimerService,
         IAuditJournal auditJournal,
+        IProcessorTopology processorTopology,
         Func<string, bool> confirm)
     {
         _systemProbe = systemProbe;
@@ -61,11 +62,11 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         Monitoring = new MonitoringViewModel(hardwareMonitorService);
         Power = new PowerPlanViewModel(powerPlanManager, ReportStatus, confirm);
         Storage = new StorageViewModel(storageMaintenanceManager, storageTuningManager, ReportStatus, confirm);
-        CoreParking = new CoreParkingViewModel(coreParkingManager, ReportStatus, confirm);
+        CoreParking = new CoreParkingViewModel(coreParkingManager, ReportStatus, confirm, processorTopology);
         Services = new ServicesViewModel(serviceInventory, serviceManager, ReportStatus, confirm);
         Network = new NetworkViewModel(networkDiagnosticsManager, networkTuningManager, ReportStatus, confirm);
         Msi = new MsiViewModel(msiModeManager, ReportStatus, confirm);
-        Timer = new SystemTimerViewModel(systemTimerService, ReportStatus);
+        Timer = new SystemTimerViewModel(systemTimerService, ReportStatus, auditJournal);
 
         _powerPropertyChangedHandler = (_, args) =>
         {

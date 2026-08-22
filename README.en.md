@@ -1,4 +1,4 @@
-# Aurum — Open-Source AtlasOS Companion (v1.0.1)
+# Aurum — Open-Source AtlasOS Companion (v1.0.2)
 
 [![Build Status](https://github.com/anntr1k3/aurum/actions/workflows/build.yml/badge.svg)](https://github.com/anntr1k3/aurum/actions/workflows/build.yml)
 [![GitHub Pages](https://github.com/anntr1k3/aurum/actions/workflows/pages.yml/badge.svg)](https://anntr1k3.github.io/aurum/)
@@ -83,7 +83,7 @@ powershell -ExecutionPolicy Bypass -File .\build_release.ps1
 ```
 This script will:
 1. Verify static project invariants (XAML resource keys resolve, every self-test is registered).
-2. Run the entire suite of **59 self-tests**.
+2. Run the entire suite of **61 self-tests**.
 3. Compile and publish a standalone single-file binary: `dist\Aurum.exe` (~69.5 MB, self-contained with embedded runtime).
 
 ### Manual Build
@@ -91,7 +91,7 @@ This script will:
 # Build solution
 dotnet build .\Aurum.sln --configuration Release
 
-# Run self-tests (59/59 tests)
+# Run self-tests (61/61 tests)
 dotnet run --project .\tests\Aurum.Core.SelfTests
 
 # Run app

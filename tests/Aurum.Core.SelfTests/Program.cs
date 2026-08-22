@@ -77,7 +77,9 @@ internal static partial class Program
             ("Tweak engine records apply, revert and failed writes in the audit journal", TweakEngineWritesAuditJournalAsync),
             ("JSONL audit journal round-trips newest entries first", JsonlAuditJournalRoundTripsAsync),
             ("Service batch disable refuses a running dependant outside the batch", ServiceBatchDisableRefusesRunningDependantAsync),
-            ("DNS revert refuses a snapshot when the adapter id changed", NetworkTuningRejectsAdapterIdMismatchAsync)
+            ("DNS revert refuses a snapshot when the adapter id changed", NetworkTuningRejectsAdapterIdMismatchAsync),
+            ("Core Parking blanket unpark is detected for hybrid-CPU guidance", CoreParkingBlanketUnparkGuidanceAsync),
+            ("Windows processor topology reports core and logical counts", WindowsProcessorTopologyIsReadableAsync)
         };
 
         var failures = 0;
@@ -1875,6 +1877,34 @@ internal static partial class Program
         {
             // Ожидаемо
         }
+    }
+
+    private static Task CoreParkingBlanketUnparkGuidanceAsync()
+    {
+        True(
+            CoreParkingGuidance.IsBlanketUnpark(new CoreParkingSettings(100, 100, 100, 100)),
+            "100% AC/DC should be treated as blanket unpark.");
+        True(
+            !CoreParkingGuidance.IsBlanketUnpark(new CoreParkingSettings(50, 100, 50, 100)),
+            "A partial minimum must not be treated as blanket unpark.");
+        True(
+            CoreParkingGuidance.HeterogeneousUnparkWarning.Contains("P/E", StringComparison.Ordinal),
+            "Hybrid-core warning must name P/E cores.");
+        return Task.CompletedTask;
+    }
+
+    private static Task WindowsProcessorTopologyIsReadableAsync()
+    {
+        var topology = new WindowsProcessorTopology().Capture();
+        Equal(Environment.ProcessorCount, topology.LogicalProcessorCount, "Logical processor count does not match the runtime.");
+        True(topology.CoreCount >= 1, "Processor topology reported no cores.");
+        True(topology.EfficiencyClassCount >= 1, "Processor topology reported no efficiency classes.");
+        if (topology.EfficiencyClassCount > 1)
+        {
+            True(topology.IsHeterogeneous, "Multiple efficiency classes must mark the CPU as heterogeneous.");
+        }
+
+        return Task.CompletedTask;
     }
 
     private static Task SystemTimerResolutionCalculationsAsync()

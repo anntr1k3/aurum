@@ -9,15 +9,18 @@ public sealed class SystemTimerViewModel : ObservableObject, IDisposable
 {
     private readonly ISystemTimerService _timerService;
     private readonly Action<string, bool> _reportStatus;
+    private readonly IAuditJournal? _auditJournal;
     private TimerResolutionInfo _info;
     private bool _isGlobalPolicyEnabled;
 
     public SystemTimerViewModel(
         ISystemTimerService timerService,
-        Action<string, bool> reportStatus)
+        Action<string, bool> reportStatus,
+        IAuditJournal? auditJournal = null)
     {
         _timerService = timerService ?? throw new ArgumentNullException(nameof(timerService));
         _reportStatus = reportStatus ?? throw new ArgumentNullException(nameof(reportStatus));
+        _auditJournal = auditJournal;
 
         _info = _timerService.GetResolution();
         _isGlobalPolicyEnabled = _timerService.IsGlobalResolutionPolicyEnabled();
@@ -100,10 +103,16 @@ public sealed class SystemTimerViewModel : ObservableObject, IDisposable
         if (success)
         {
             _reportStatus($"Системный таймер переведён на {milliseconds:0.0} мс ({1000.0 / milliseconds:0} Гц).", false);
+            _ = AuditJournal.RecordAsync(
+                _auditJournal, "timer", $"{milliseconds:0.0} ms", AuditAction.Applied, true,
+                $"Разрешение {milliseconds:0.0} мс.");
         }
         else
         {
             _reportStatus("Не удалось изменить разрешение системного таймера.", true);
+            _ = AuditJournal.RecordAsync(
+                _auditJournal, "timer", $"{milliseconds:0.0} ms", AuditAction.Failed, false,
+                "NtSetTimerResolution не применил запрос.");
         }
 
         return success;
@@ -117,10 +126,16 @@ public sealed class SystemTimerViewModel : ObservableObject, IDisposable
         if (success)
         {
             _reportStatus("Системный таймер возвращён к значению по умолчанию Windows.", false);
+            _ = AuditJournal.RecordAsync(
+                _auditJournal, "timer", "default", AuditAction.Reverted, true,
+                "Запрос высокого разрешения снят.");
         }
         else
         {
             _reportStatus("Не удалось вернуть разрешение системного таймера к значению по умолчанию.", true);
+            _ = AuditJournal.RecordAsync(
+                _auditJournal, "timer", "default", AuditAction.Failed, false,
+                "Не удалось снять запрос разрешения.");
         }
 
         return success;
@@ -138,10 +153,16 @@ public sealed class SystemTimerViewModel : ObservableObject, IDisposable
                     ? "Включён глобальный запрос таймера (GlobalTimerResolutionRequests = 1)."
                     : "Отключён глобальный запрос таймера.",
                 false);
+            _ = AuditJournal.RecordAsync(
+                _auditJournal, "timer", "GlobalTimerResolutionRequests", AuditAction.Applied, true,
+                targetState ? "Глобальная политика включена." : "Глобальная политика выключена.");
         }
         catch (Exception ex)
         {
             _reportStatus($"Ошибка настройки политики таймера: {ex.Message}", true);
+            _ = AuditJournal.RecordAsync(
+                _auditJournal, "timer", "GlobalTimerResolutionRequests", AuditAction.Failed, false,
+                ex.Message);
         }
     }
 

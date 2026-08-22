@@ -9,7 +9,7 @@
 1. **`.cursor/ANTIGRAVITY_CONTEXT.md`** — Полный архитектурный и функциональный контекст проекта, написанный специально для агента Antigravity.
 2. **`website/`** — Полные исходники статического веб-сайта Aurum (`index.html`, `styles.css`, `app.js`, шрифты `fonts/`).
 3. **`src/`** — Исходный код C# .NET 8 / WPF (`Aurum.Core`, `Aurum.Infrastructure.Windows`, `Aurum.App`).
-4. **`tests/`** — Набор автономных тестов (`Aurum.Core.SelfTests`, 59 тестов).
+4. **`tests/`** — Набор автономных тестов (`Aurum.Core.SelfTests`, 61 тест).
 5. **`docs/`** — Архитектурная документация, Product Brief, Roadmap.
 6. **`build_release.ps1`** — Скрипт сборки автономного EXE.
 7. **Архивы в папке `dist/`**:
@@ -33,7 +33,7 @@
 ### Шаг 3. Проверка окружения и тестов
 В терминале PowerShell на новом компьютере:
 ```powershell
-# 1. Прогон всех 59 тестов
+# 1. Прогон всех 61 тестов
 dotnet run --project .\tests\Aurum.Core.SelfTests
 
 # 2. Сборка релиза
@@ -47,7 +47,7 @@ python -m http.server 4173
 ---
 
 ## 📋 Контрольный список готовности:
-- [x] Все 59/59 автотестов пройдены успешно.
+- [x] Все 61/61 автотестов пройдены успешно.
 - [x] Поддержка MSI Mode и System Timer Resolution внедрена.
 - [x] Сайт обновлен и включает интерактивные вкладки по всем новым фичам.
 - [x] Контекст проекта полностью задокументирован в `.cursor/ANTIGRAVITY_CONTEXT.md`.

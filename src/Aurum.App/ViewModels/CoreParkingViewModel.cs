@@ -7,6 +7,7 @@ public sealed class CoreParkingViewModel : ObservableObject
     private readonly CoreParkingManager _manager;
     private readonly Action<string, bool> _report;
     private readonly Func<string, bool> _confirm;
+    private readonly bool _isHeterogeneous;
     private CoreParkingStateKind _state;
     private CoreParkingSettings? _currentSettings;
     private double _minimumAc;
@@ -19,11 +20,16 @@ public sealed class CoreParkingViewModel : ObservableObject
     private string _originalPlanLabel = "Не сохранён";
     private bool _isBusy;
 
-    public CoreParkingViewModel(CoreParkingManager manager, Action<string, bool> report, Func<string, bool> confirm)
+    public CoreParkingViewModel(
+        CoreParkingManager manager,
+        Action<string, bool> report,
+        Func<string, bool> confirm,
+        IProcessorTopology? topology = null)
     {
         _manager = manager;
         _report = report;
         _confirm = confirm;
+        _isHeterogeneous = topology?.Capture().IsHeterogeneous == true;
         RefreshCommand = new AsyncRelayCommand(RefreshAsync, () => !IsBusy);
         ApplyCommand = new AsyncRelayCommand(ApplyAsync, () => CanApply);
         RepairCommand = new AsyncRelayCommand(RepairAsync, () => CanRepair);
@@ -41,7 +47,8 @@ public sealed class CoreParkingViewModel : ObservableObject
     public string Summary { get => _summary; private set => SetProperty(ref _summary, value); }
     public string StateLabel { get => _stateLabel; private set => SetProperty(ref _stateLabel, value); }
     public string OriginalPlanLabel { get => _originalPlanLabel; private set => SetProperty(ref _originalPlanLabel, value); }
-    public int LogicalProcessorCount => Environment.ProcessorCount;
+    public bool IsHeterogeneous => _isHeterogeneous;
+    public string HeterogeneousGuidance => CoreParkingGuidance.HeterogeneousUnparkWarning;
 
     public double MinimumAc { get => _minimumAc; set => SetValue(ref _minimumAc, value); }
     public double MaximumAc { get => _maximumAc; set => SetValue(ref _maximumAc, value); }
@@ -84,11 +91,7 @@ public sealed class CoreParkingViewModel : ObservableObject
 
     public bool IsManagedPlanActive => State == CoreParkingStateKind.Applied;
 
-    public Task<bool> ApplyDirectAsync()
-    {
-        var desired = DesiredSettings;
-        return RunAsync(() => _manager.ApplyAsync(desired), "План Core Parking создан и активирован.");
-    }
+    public Task<bool> ApplyDirectAsync() => ApplyInternalAsync(confirmHeterogeneousUnpark: true);
 
     public Task<bool> RevertDirectAsync()
     {
@@ -98,11 +101,28 @@ public sealed class CoreParkingViewModel : ObservableObject
     private async Task ApplyAsync()
     {
         var desired = DesiredSettings;
-        if (!_confirm(
-                $"Создать отдельный план Aurum и применить Core Parking?\n\n" +
-                $"Сеть: {desired.MinimumAc}–{desired.MaximumAc}% · батарея: {desired.MinimumDc}–{desired.MaximumDc}%.\n" +
-                "Встроенный план Windows изменён не будет.")) return;
-        await ApplyDirectAsync();
+        var message =
+            $"Создать отдельный план Aurum и применить Core Parking?\n\n" +
+            $"Сеть: {desired.MinimumAc}–{desired.MaximumAc}% · батарея: {desired.MinimumDc}–{desired.MaximumDc}%.\n" +
+            "Встроенный план Windows изменён не будет.";
+        if (_isHeterogeneous && CoreParkingGuidance.IsBlanketUnpark(desired))
+        {
+            message += "\n\n" + CoreParkingGuidance.HeterogeneousUnparkWarning;
+        }
+
+        if (!_confirm(message)) return;
+        await ApplyInternalAsync(confirmHeterogeneousUnpark: false);
+    }
+
+    private Task<bool> ApplyInternalAsync(bool confirmHeterogeneousUnpark)
+    {
+        if (confirmHeterogeneousUnpark && !ConfirmHeterogeneousUnparkIfNeeded())
+        {
+            return Task.FromResult(false);
+        }
+
+        var desired = DesiredSettings;
+        return RunAsync(() => _manager.ApplyAsync(desired), "План Core Parking создан и активирован.");
     }
 
     private Task RepairAsync() => RunAsync(() => _manager.RepairAsync(), "Параметры и активность плана Core Parking восстановлены.");
@@ -114,6 +134,15 @@ public sealed class CoreParkingViewModel : ObservableObject
     }
 
     /// <summary>Returns false when the transaction failed, so callers never report a false success.</summary>
+    private bool ConfirmHeterogeneousUnparkIfNeeded()
+    {
+        if (!_isHeterogeneous || !CoreParkingGuidance.IsBlanketUnpark(DesiredSettings))
+        {
+            return true;
+        }
+
+        return _confirm(CoreParkingGuidance.HeterogeneousUnparkWarning + "\n\nПродолжить применение 100% активных ядер?");
+    }
     private async Task<bool> RunAsync(Func<Task> action, string success)
     {
         if (IsBusy) return false;
