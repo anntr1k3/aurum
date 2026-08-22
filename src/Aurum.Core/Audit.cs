@@ -38,3 +38,32 @@ public interface IAuditJournal
 
     Task<IReadOnlyList<AuditEntry>> ReadRecentAsync(int count, CancellationToken cancellationToken = default);
 }
+
+public static class AuditJournal
+{
+    public static async Task RecordAsync(
+        IAuditJournal? journal,
+        string area,
+        string subject,
+        AuditAction action,
+        bool succeeded,
+        string detail,
+        CancellationToken cancellationToken = default)
+    {
+        if (journal is null)
+        {
+            return;
+        }
+
+        try
+        {
+            await journal.AppendAsync(
+                new AuditEntry(DateTimeOffset.UtcNow, area, subject, action, succeeded, detail),
+                cancellationToken);
+        }
+        catch
+        {
+            // The journal must not fail a system transaction.
+        }
+    }
+}

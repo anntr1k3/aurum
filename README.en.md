@@ -14,7 +14,7 @@ Aurum is a modern, transparent, auditable, and fully reversible Windows companio
 
 Instead of opaque "magic" scripts or destructive tweaks, Aurum adheres to a strict engineering philosophy:
 - **No Snake-Oil:** Transparent system optimizations, zero hidden actions, and no ungrounded claims.
-- **Measurable System Responsiveness:** Focuses on interrupt handling (MSI Mode), timer resolution (0.500 ms), DPC queue reduction, SSD wear prevention, and clean OS defaults.
+- **Measurable System Responsiveness:** Focuses on interrupt handling (MSI Mode), timer resolution, DPC queue reduction, SSD wear prevention, and clean OS defaults.
 - **Full Reversibility & Drift Detection:** Every modification captures the original pre-Aurum state in `%LOCALAPPDATA%\Aurum\` snapshots and can be restored or repaired at any time.
 - **Nordic Blue Design:** Clean, distraction-free modern UI with **Unbounded** & **Onest** typography.
 - **Zero Telemetry:** Completely offline, no background telemetry, and no remote script execution.

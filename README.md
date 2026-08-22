@@ -72,7 +72,7 @@ powershell -ExecutionPolicy Bypass -File .\build_release.ps1
 ```
 This script will:
 1. Verify static project invariants (XAML resource keys resolve, every self-test is registered).
-2. Run the entire suite of **57 self-tests**.
+2. Run the entire suite of **59 self-tests**.
 3. Compile and publish a standalone single-file binary: `dist\Aurum.exe` (~69.5 MB, self-contained with embedded runtime).
 
 ### Manual Build

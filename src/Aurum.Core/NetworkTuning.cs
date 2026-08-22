@@ -78,16 +78,19 @@ public sealed class NetworkTuningManager
     private readonly INetworkTuningStore _store;
     private readonly INetworkTuningStateRepository _stateRepository;
     private readonly Func<bool> _isAdministrator;
+    private readonly IAuditJournal? _auditJournal;
     private readonly SemaphoreSlim _gate = new(1, 1);
 
     public NetworkTuningManager(
         INetworkTuningStore store,
         INetworkTuningStateRepository stateRepository,
-        Func<bool> isAdministrator)
+        Func<bool> isAdministrator,
+        IAuditJournal? auditJournal = null)
     {
         _store = store ?? throw new ArgumentNullException(nameof(store));
         _stateRepository = stateRepository ?? throw new ArgumentNullException(nameof(stateRepository));
         _isAdministrator = isAdministrator ?? throw new ArgumentNullException(nameof(isAdministrator));
+        _auditJournal = auditJournal;
     }
 
     public async Task ApplyDnsPresetAsync(
@@ -102,8 +105,13 @@ public sealed class NetworkTuningManager
         await _gate.WaitAsync(cancellationToken);
         try
         {
-            var existing = await _stateRepository.GetAsync(adapter.Name, cancellationToken);
-            if (existing is null)
+            var existing = await _stateRepository.GetAsync(adapter.Name, cancellationToken)
+                ?? await _stateRepository.GetAsync(adapter.Id, cancellationToken);
+            if (existing is not null)
+            {
+                EnsureLiveAdapterMatchesSnapshot(adapter, existing);
+            }
+            else
             {
                 var originalWasDhcp = adapter.DnsServers.Count == 0;
                 var state = new PersistedNetworkAdapterTuningState(
@@ -125,6 +133,14 @@ public sealed class NetworkTuningManager
             }
 
             await _store.FlushDnsCacheAsync(cancellationToken);
+            await AuditJournal.RecordAsync(
+                _auditJournal,
+                "network",
+                adapter.Name,
+                AuditAction.Applied,
+                succeeded: true,
+                $"DNS: {preset.Name}.",
+                cancellationToken);
         }
         finally
         {
@@ -140,23 +156,40 @@ public sealed class NetworkTuningManager
         await _gate.WaitAsync(cancellationToken);
         try
         {
-            var state = await _stateRepository.GetAsync(adapter.Name, cancellationToken);
+            var state = await _stateRepository.GetAsync(adapter.Id, cancellationToken)
+                ?? await _stateRepository.GetAsync(adapter.Name, cancellationToken);
             if (state is null)
             {
                 await _store.ResetDnsToDhcpAsync(adapter.Name, cancellationToken);
             }
-            else if (state.OriginalWasDhcp || state.OriginalDnsServers.Count == 0)
-            {
-                await _store.ResetDnsToDhcpAsync(adapter.Name, cancellationToken);
-                await _stateRepository.RemoveAsync(adapter.Name, cancellationToken);
-            }
             else
             {
-                await _store.SetDnsAsync(adapter.Name, state.OriginalDnsServers, cancellationToken);
-                await _stateRepository.RemoveAsync(adapter.Name, cancellationToken);
+                EnsureLiveAdapterMatchesSnapshot(adapter, state);
+                if (state.OriginalWasDhcp || state.OriginalDnsServers.Count == 0)
+                {
+                    await _store.ResetDnsToDhcpAsync(adapter.Name, cancellationToken);
+                }
+                else
+                {
+                    await _store.SetDnsAsync(adapter.Name, state.OriginalDnsServers, cancellationToken);
+                }
+
+                await _stateRepository.RemoveAsync(state.AdapterName, cancellationToken);
+                if (!string.Equals(state.AdapterId, state.AdapterName, StringComparison.OrdinalIgnoreCase))
+                {
+                    await _stateRepository.RemoveAsync(state.AdapterId, cancellationToken);
+                }
             }
 
             await _store.FlushDnsCacheAsync(cancellationToken);
+            await AuditJournal.RecordAsync(
+                _auditJournal,
+                "network",
+                adapter.Name,
+                AuditAction.Reverted,
+                succeeded: true,
+                "Исходные DNS восстановлены.",
+                cancellationToken);
         }
         finally
         {
@@ -188,6 +221,22 @@ public sealed class NetworkTuningManager
         if (!_isAdministrator())
         {
             throw new UnauthorizedAccessException("Для изменения сетевых параметров требуются права администратора.");
+        }
+    }
+
+    private static void EnsureLiveAdapterMatchesSnapshot(
+        NetworkAdapterInfo adapter,
+        PersistedNetworkAdapterTuningState state)
+    {
+        if (string.IsNullOrWhiteSpace(state.AdapterId))
+        {
+            return;
+        }
+
+        if (!string.Equals(adapter.Id, state.AdapterId, StringComparison.OrdinalIgnoreCase))
+        {
+            throw new InvalidOperationException(
+                $"Снимок DNS относится к другому адаптеру («{state.AdapterName}»). Aurum не будет применять его к «{adapter.Name}».");
         }
     }
 }

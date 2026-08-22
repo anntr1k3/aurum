@@ -33,8 +33,10 @@ Treat a location or a service name read from a state file as untrusted input:
 
 - Tweak revert checks every target in the snapshot against the targets the tweak
   declares in the catalog.
-- Service repair refuses names in `ServiceAnalyzer`'s protected set, and service revert
-  writes nothing unless the service is currently disabled.
+- Service repair and revert only write declared optional names, never protected
+  names, and revert writes a start mode only when the service is currently disabled.
+  A batch disable is refused when a running service outside the batch still depends
+  on one of the targets.
 
 A new manager that reads a path, a name or a device identifier out of persisted state
 needs an equivalent check before it writes anything.

@@ -115,12 +115,17 @@ public sealed class ServiceManager
 {
     private readonly IServiceControlStore _controlStore;
     private readonly IServiceStateRepository _stateRepository;
+    private readonly IAuditJournal? _auditJournal;
     private readonly SemaphoreSlim _gate = new(1, 1);
 
-    public ServiceManager(IServiceControlStore controlStore, IServiceStateRepository stateRepository)
+    public ServiceManager(
+        IServiceControlStore controlStore,
+        IServiceStateRepository stateRepository,
+        IAuditJournal? auditJournal = null)
     {
         _controlStore = controlStore ?? throw new ArgumentNullException(nameof(controlStore));
         _stateRepository = stateRepository ?? throw new ArgumentNullException(nameof(stateRepository));
+        _auditJournal = auditJournal;
     }
 
     private static void EnsureNotProtected(string serviceName)
@@ -210,6 +215,15 @@ public sealed class ServiceManager
                         // Best-effort stop
                     }
                 }
+
+                await AuditJournal.RecordAsync(
+                    _auditJournal,
+                    "service",
+                    serviceName,
+                    AuditAction.Applied,
+                    succeeded: true,
+                    "Тип запуска установлен в Disabled.",
+                    cancellationToken);
             }
             catch (Exception ex)
             {
@@ -226,6 +240,15 @@ public sealed class ServiceManager
                 {
                     // Recovery best effort
                 }
+
+                await AuditJournal.RecordAsync(
+                    _auditJournal,
+                    "service",
+                    serviceName,
+                    AuditAction.Failed,
+                    succeeded: false,
+                    ex.Message,
+                    CancellationToken.None);
 
                 throw new InvalidOperationException($"Не удалось отключить службу '{serviceName}': {ex.Message}", ex);
             }
@@ -292,6 +315,14 @@ public sealed class ServiceManager
             }
 
             await _stateRepository.RemoveAsync(serviceName, cancellationToken);
+            await AuditJournal.RecordAsync(
+                _auditJournal,
+                "service",
+                serviceName,
+                AuditAction.Reverted,
+                succeeded: true,
+                "Исходный тип запуска восстановлен.",
+                cancellationToken);
         }
         finally
         {
@@ -326,6 +357,15 @@ public sealed class ServiceManager
             {
                 // Best-effort stop
             }
+
+            await AuditJournal.RecordAsync(
+                _auditJournal,
+                "service",
+                serviceName,
+                AuditAction.Repaired,
+                succeeded: true,
+                "Служба снова отключена. Снимок отката не менялся.",
+                cancellationToken);
         }
         finally
         {

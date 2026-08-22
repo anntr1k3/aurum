@@ -49,10 +49,13 @@ an explicitly opened technical layer and must not dominate the default screen.
 
 ## Next milestones
 
-1. MVP: registry tweaks, persistent health, Atlas checks, safe cleanup, individual rollback.
-2. Preview: expand the delivered hardware, power-plan, and storage diagnostics, then add an audit log.
-3. Beta: signed manifests, expand the delivered core-parking, service, and network analyzers.
-4. Stable: signed releases, reproducible builds, migration guarantees.
+Shipped through tagged `v1.0.1`: registry tweaks, Atlas checks, cleanup,
+monitoring, power plans, Core Parking, storage retrim and NTFS/SysMain toggles,
+service mutations, DNS/TCP tuning, MSI, and the system timer.
 
-The detailed feature backlog and safety constraints are maintained in
-[`roadmap.md`](roadmap.md).
+On `main`, not yet in a GitHub Release: audit coverage beyond tweaks, crash-log
+open, service-batch dependant refusal, exclusive cleanup deletes, and DNS
+adapter-id matching.
+
+Signed binaries, reproducible builds, and snapshot-format migration guarantees
+remain later work. The detailed backlog is in [`roadmap.md`](roadmap.md).

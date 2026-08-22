@@ -1,3 +1,6 @@
+using System.Runtime.InteropServices;
+using Microsoft.Win32.SafeHandles;
+
 namespace Aurum.Infrastructure.Windows;
 
 public sealed record CleanupCategory(
@@ -158,15 +161,12 @@ public sealed class SystemCleanupService
                 // means a file swapped between scan and delete is skipped rather than
                 // removed, and the reparse-point check keeps a planted link from
                 // redirecting the delete outside the category root.
-                var file = new FileInfo(candidate.FullPath);
-                if (!file.Exists || file.Attributes.HasFlag(FileAttributes.ReparsePoint) ||
-                    file.Length != candidate.Length || file.LastWriteTimeUtc != candidate.LastWriteTimeUtc)
+                if (!TryDeleteUnchangedFile(candidate.FullPath, candidate.Length, candidate.LastWriteTimeUtc))
                 {
                     skippedCount++;
                     continue;
                 }
 
-                file.Delete();
                 deletedCount++;
                 freedBytes += candidate.Length;
             }
@@ -212,5 +212,115 @@ public sealed class SystemCleanupService
         var root = Path.GetFullPath(rootPath).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
         var rootPrefix = root + Path.DirectorySeparatorChar;
         return candidate.StartsWith(rootPrefix, StringComparison.OrdinalIgnoreCase);
+    }
+
+    /// <summary>
+    /// Opens the path with exclusive DELETE access and a reparse-point flag so a
+    /// replacement between scan and delete cannot redirect the unlink. Size and write
+    /// time are read from the handle, then delete-on-close is set before the handle is
+    /// released.
+    /// </summary>
+    private static bool TryDeleteUnchangedFile(string path, long expectedLength, DateTime expectedWriteUtc)
+    {
+        using var handle = NativeMethods.CreateFile(
+            path,
+            NativeMethods.GenericRead | NativeMethods.DeleteAccess,
+            NativeMethods.FileShareNone,
+            IntPtr.Zero,
+            NativeMethods.OpenExisting,
+            NativeMethods.FileFlagOpenReparsePoint,
+            IntPtr.Zero);
+        if (handle.IsInvalid)
+        {
+            return false;
+        }
+
+        if (!NativeMethods.GetFileInformationByHandle(handle, out var info))
+        {
+            return false;
+        }
+
+        if ((info.FileAttributes & NativeMethods.FileAttributeReparsePoint) != 0)
+        {
+            return false;
+        }
+
+        var size = ((long)info.FileSizeHigh << 32) | info.FileSizeLow;
+        if (size != expectedLength)
+        {
+            return false;
+        }
+
+        var writeTime = DateTime.FromFileTimeUtc(
+            ((long)info.LastWriteTimeHigh << 32) | info.LastWriteTimeLow);
+        if (writeTime != expectedWriteUtc)
+        {
+            return false;
+        }
+
+        var disposition = new NativeMethods.FileDispositionInfo { DeleteFile = 1 };
+        return NativeMethods.SetFileInformationByHandle(
+            handle,
+            NativeMethods.FileDispositionInfoClass,
+            ref disposition,
+            NativeMethods.FileDispositionInfoSize);
+    }
+
+    private static class NativeMethods
+    {
+        internal const uint GenericRead = 0x80000000;
+        internal const uint DeleteAccess = 0x00010000;
+        internal const uint FileShareNone = 0;
+        internal const uint OpenExisting = 3;
+        internal const uint FileFlagOpenReparsePoint = 0x00200000;
+        internal const uint FileAttributeReparsePoint = 0x400;
+        internal const int FileDispositionInfoClass = 4;
+        internal static readonly int FileDispositionInfoSize = Marshal.SizeOf<FileDispositionInfo>();
+
+        [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        internal static extern SafeFileHandle CreateFile(
+            string lpFileName,
+            uint dwDesiredAccess,
+            uint dwShareMode,
+            IntPtr lpSecurityAttributes,
+            uint dwCreationDisposition,
+            uint dwFlagsAndAttributes,
+            IntPtr hTemplateFile);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        internal static extern bool GetFileInformationByHandle(
+            SafeFileHandle hFile,
+            out ByHandleFileInformation lpFileInformation);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        internal static extern bool SetFileInformationByHandle(
+            SafeFileHandle hFile,
+            int fileInformationClass,
+            ref FileDispositionInfo fileInformation,
+            int bufferSize);
+
+        [StructLayout(LayoutKind.Sequential)]
+        internal struct ByHandleFileInformation
+        {
+            internal uint FileAttributes;
+            internal uint CreationTimeLow;
+            internal uint CreationTimeHigh;
+            internal uint LastAccessTimeLow;
+            internal uint LastAccessTimeHigh;
+            internal uint LastWriteTimeLow;
+            internal uint LastWriteTimeHigh;
+            internal uint VolumeSerialNumber;
+            internal uint FileSizeHigh;
+            internal uint FileSizeLow;
+            internal uint NumberOfLinks;
+            internal uint FileIndexHigh;
+            internal uint FileIndexLow;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        internal struct FileDispositionInfo
+        {
+            internal byte DeleteFile;
+        }
     }
 }

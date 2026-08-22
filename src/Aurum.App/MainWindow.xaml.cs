@@ -35,7 +35,8 @@ public partial class MainWindow : Window
                 new WindowsPowerPlanStore(),
                 powerPlanStateRepository,
                 async cancellationToken => await coreParkingStateRepository.GetAsync(cancellationToken) is not null,
-                powerPlanScope),
+                powerPlanScope,
+                auditJournal),
             new StorageMaintenanceManager(
                 new WindowsStorageInventoryStore(),
                 new DefragStorageOptimizer(),
@@ -48,22 +49,26 @@ public partial class MainWindow : Window
                 new WindowsCoreParkingStore(),
                 coreParkingStateRepository,
                 powerPlanStateRepository,
-                powerPlanScope),
+                powerPlanScope,
+                auditJournal),
             new WindowsServiceInventory(),
             new ServiceManager(
                 new WindowsServiceControlStore(),
-                new JsonServiceStateRepository()),
+                new JsonServiceStateRepository(),
+                auditJournal),
             new NetworkDiagnosticsManager(
                 new WindowsNetworkInventoryStore(),
                 new WindowsNetworkProbe()),
             new NetworkTuningManager(
                 new WindowsNetworkTuningStore(),
                 new JsonNetworkTuningStateRepository(),
-                () => systemProbe.Capture().IsAdministrator),
+                () => systemProbe.Capture().IsAdministrator,
+                auditJournal),
             new MsiModeManager(
                 new WindowsPciDeviceInventory(),
                 new JsonMsiStateRepository(),
-                () => systemProbe.Capture().IsAdministrator),
+                () => systemProbe.Capture().IsAdministrator,
+                auditJournal),
             new WindowsSystemTimerService(),
             auditJournal,
             message => MessageBox.Show(

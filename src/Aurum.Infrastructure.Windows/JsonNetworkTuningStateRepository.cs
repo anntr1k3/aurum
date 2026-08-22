@@ -31,7 +31,14 @@ public sealed class JsonNetworkTuningStateRepository : INetworkTuningStateReposi
         try
         {
             var states = await ReadAllUnsafeAsync(cancellationToken);
-            return states.GetValueOrDefault(adapterName);
+            if (states.TryGetValue(adapterName, out var match))
+            {
+                return match;
+            }
+
+            return states.Values.FirstOrDefault(entry =>
+                string.Equals(entry.AdapterId, adapterName, StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(entry.AdapterName, adapterName, StringComparison.OrdinalIgnoreCase));
         }
         finally
         {
@@ -49,7 +56,7 @@ public sealed class JsonNetworkTuningStateRepository : INetworkTuningStateReposi
         try
         {
             var states = await ReadAllUnsafeAsync(cancellationToken);
-            states[state.AdapterName] = state;
+            states[string.IsNullOrWhiteSpace(state.AdapterId) ? state.AdapterName : state.AdapterId] = state;
             await WriteAllUnsafeAsync(states, cancellationToken);
         }
         finally
@@ -94,7 +101,8 @@ public sealed class JsonNetworkTuningStateRepository : INetworkTuningStateReposi
             cancellationToken);
 
         return (entries ?? [])
-            .ToDictionary(static entry => entry.AdapterName, StringComparer.OrdinalIgnoreCase);
+            .GroupBy(static entry => string.IsNullOrWhiteSpace(entry.AdapterId) ? entry.AdapterName : entry.AdapterId, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(static group => group.Key, static group => group.Last(), StringComparer.OrdinalIgnoreCase);
     }
 
     private async Task WriteAllUnsafeAsync(

@@ -74,15 +74,11 @@ that would write a start mode accept only names in the declared optional set
 (the same context-dependent services the UI can select). Protected names are
 refused as well. Revert writes a start mode from the snapshot only when the
 service is currently disabled, so an edited snapshot cannot enable an arbitrary
-service, and cannot change an undeclared name that happens to be disabled.
+service, and cannot change an undeclared name that happens to be disabled. A
+batch disable is refused when a running service outside the batch still depends
+on a target.
 
 ## MSI interrupt configuration
-
-Writes under `HKLM\SYSTEM\CurrentControlSet\Enum\PCI` accept only a
-three-segment instance id (`PCI\{hardware}\{instance}`). Apply and revert look
-the id up in the live PCI inventory and refuse devices marked as not
-modifiable. The registry adapter then opens that hardware key and instance as
-nested subkeys rather than concatenating the snapshot string onto the PCI root.
 
 ## Network diagnostics boundary
 
@@ -91,8 +87,9 @@ configuration session. Global TCP state is parsed from the read-only `netsh
 interface tcp show global` report so the application does not require elevation
 merely to inspect it. Latency measurement accepts only validated IP addresses or
 DNS host names and calls the .NET ICMP API directly; no shell receives user
-input. DNS, MTU, RSS, RSC, offload, and TCP values are never written in this
-slice.
+input. DNS preset revert refuses a snapshot whose adapter id no longer matches
+the live interface, so a renamed or replaced NIC cannot inherit another
+adapter's servers.
 
 ## AtlasOS health
 

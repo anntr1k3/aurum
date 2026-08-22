@@ -75,7 +75,9 @@ internal static partial class Program
             ("All UI referenced tweak IDs exist in BuiltInTweakCatalog", AllReferencedTweakIdsExistInCatalogAsync),
             ("Windows PCI device inventory is readable", WindowsPciInventoryIsReadableAsync),
             ("Tweak engine records apply, revert and failed writes in the audit journal", TweakEngineWritesAuditJournalAsync),
-            ("JSONL audit journal round-trips newest entries first", JsonlAuditJournalRoundTripsAsync)
+            ("JSONL audit journal round-trips newest entries first", JsonlAuditJournalRoundTripsAsync),
+            ("Service batch disable refuses a running dependant outside the batch", ServiceBatchDisableRefusesRunningDependantAsync),
+            ("DNS revert refuses a snapshot when the adapter id changed", NetworkTuningRejectsAdapterIdMismatchAsync)
         };
 
         var failures = 0;
@@ -575,6 +577,28 @@ internal static partial class Program
         return Task.CompletedTask;
     }
 
+    private static Task ServiceBatchDisableRefusesRunningDependantAsync()
+    {
+        var spooler = CreateService("Spooler", []);
+        var printer = new ServiceDefinition(
+            "FakePrint", "Fake Print Client", string.Empty,
+            ServiceRunState.Running, ServiceStartMode.Automatic, false, 2, ["Spooler"]);
+        var analysis = ServiceAnalyzer.Analyze([spooler, printer]);
+
+        try
+        {
+            ServiceAnalyzer.EnsureDisableBatchHasNoRunningDependants(["Spooler"], analysis);
+            throw new InvalidOperationException("Batch disable with a running dependant was allowed.");
+        }
+        catch (InvalidOperationException error) when (error.Message.Contains("Fake Print Client", StringComparison.Ordinal))
+        {
+            // Expected: the running client is named in the refusal.
+        }
+
+        ServiceAnalyzer.EnsureDisableBatchHasNoRunningDependants(["Spooler", "FakePrint"], analysis);
+        return Task.CompletedTask;
+    }
+
     private static async Task WindowsServiceInventoryIsReadableAsync()
     {
         var services = await new WindowsServiceInventory().CaptureAsync();
@@ -1071,6 +1095,35 @@ internal static partial class Program
         Equal("192.168.1.1", store.ConfiguredDns["Ethernet"][0], "Original DNS must be restored upon revert.");
         var stateAfterRevert = await repo.GetAsync("Ethernet");
         True(stateAfterRevert is null, "State repository must be cleared after revert.");
+    }
+
+    private static async Task NetworkTuningRejectsAdapterIdMismatchAsync()
+    {
+        var store = new InMemoryNetworkTuningStore();
+        var repo = new InMemoryNetworkTuningStateRepository();
+        var manager = new NetworkTuningManager(store, repo, () => true);
+        var original = new NetworkAdapterInfo(
+            Id: "{ORIGINAL-GUID}",
+            Name: "Ethernet",
+            Description: "Intel Ethernet Controller",
+            InterfaceType: "Ethernet",
+            OperationalStatus: "Up",
+            SpeedBitsPerSecond: 1_000_000_000,
+            Mtu: 1500,
+            PhysicalAddress: "00-11-22-33-44-55",
+            IPv4Addresses: new[] { "192.168.1.50" },
+            IPv6Addresses: Array.Empty<string>(),
+            Gateways: new[] { "192.168.1.1" },
+            DnsServers: new[] { "192.168.1.1" },
+            IsPrimary: true);
+
+        await manager.ApplyDnsPresetAsync(original, BuiltInDnsPresets.All.First(p => p.Id == "cloudflare"));
+        Equal("1.1.1.1", store.ConfiguredDns["Ethernet"][0], "Preset was not applied before the mismatch check.");
+
+        var replaced = original with { Id = "{REPLACED-GUID}" };
+        await ThrowsAsync<InvalidOperationException>(() => manager.RevertDnsAsync(replaced));
+        Equal("1.1.1.1", store.ConfiguredDns["Ethernet"][0], "DNS must not be written to a different adapter with the same name.");
+        NotNull(await repo.GetAsync("Ethernet"), "A refused revert must keep the snapshot.");
     }
 
     private static async Task NetworkTuningRequiresAdminAsync()

@@ -93,17 +93,20 @@ public sealed class PowerPlanManager
     private readonly IPowerPlanStateRepository _repository;
     private readonly Func<CancellationToken, Task<bool>>? _hasConflictingFeature;
     private readonly PowerPlanTransactionScope _scope;
+    private readonly IAuditJournal? _auditJournal;
 
     public PowerPlanManager(
         IPowerPlanStore store,
         IPowerPlanStateRepository repository,
         Func<CancellationToken, Task<bool>>? hasConflictingFeature = null,
-        PowerPlanTransactionScope? scope = null)
+        PowerPlanTransactionScope? scope = null,
+        IAuditJournal? auditJournal = null)
     {
         _store = store;
         _repository = repository;
         _hasConflictingFeature = hasConflictingFeature;
         _scope = scope ?? new PowerPlanTransactionScope();
+        _auditJournal = auditJournal;
     }
 
     public async Task<PowerPlanEvaluation> EvaluateAsync(CancellationToken cancellationToken = default)
@@ -159,6 +162,14 @@ public sealed class PowerPlanManager
         try
         {
             await _store.SetActiveAsync(desiredPlanId, cancellationToken);
+            await AuditJournal.RecordAsync(
+                _auditJournal,
+                "power",
+                desiredPlanId.ToString(),
+                AuditAction.Applied,
+                succeeded: true,
+                "Активная схема питания заменена.",
+                cancellationToken);
         }
         catch (Exception error)
         {
@@ -181,6 +192,9 @@ public sealed class PowerPlanManager
         var snapshot = await _store.CaptureAsync(cancellationToken);
         EnsurePlanExists(snapshot, state.DesiredPlanId);
         await _store.SetActiveAsync(state.DesiredPlanId, cancellationToken);
+        await AuditJournal.RecordAsync(
+            _auditJournal, "power", state.DesiredPlanId.ToString(), AuditAction.Repaired, true,
+            "Желаемая схема снова активна.", cancellationToken);
     }
 
     public async Task RevertAsync(CancellationToken cancellationToken = default)
@@ -196,6 +210,9 @@ public sealed class PowerPlanManager
         try
         {
             await _repository.RemoveAsync(cancellationToken);
+            await AuditJournal.RecordAsync(
+                _auditJournal, "power", state.OriginalPlanId.ToString(), AuditAction.Reverted, true,
+                "Исходная схема питания восстановлена.", cancellationToken);
         }
         catch (Exception error)
         {

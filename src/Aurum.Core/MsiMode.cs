@@ -121,15 +121,18 @@ public sealed class MsiModeManager
     private readonly IMsiDeviceInventory _inventory;
     private readonly IMsiStateRepository _repository;
     private readonly Func<bool> _isAdministrator;
+    private readonly IAuditJournal? _auditJournal;
 
     public MsiModeManager(
         IMsiDeviceInventory inventory,
         IMsiStateRepository repository,
-        Func<bool> isAdministrator)
+        Func<bool> isAdministrator,
+        IAuditJournal? auditJournal = null)
     {
         _inventory = inventory ?? throw new ArgumentNullException(nameof(inventory));
         _repository = repository ?? throw new ArgumentNullException(nameof(repository));
         _isAdministrator = isAdministrator ?? throw new ArgumentNullException(nameof(isAdministrator));
+        _auditJournal = auditJournal;
     }
 
     public async Task<IReadOnlyList<PciDeviceMsiInfo>> CaptureAsync(CancellationToken cancellationToken = default)
@@ -178,6 +181,9 @@ public sealed class MsiModeManager
 
             var limit = target.MessageNumberLimit > 0 ? target.MessageNumberLimit : 1;
             await _inventory.SetMsiPropertiesAsync(target.DeviceInstanceId, enableMsi, limit, priority, cancellationToken).ConfigureAwait(false);
+            await AuditJournal.RecordAsync(
+                _auditJournal, "msi", target.Name, AuditAction.Applied, true,
+                enableMsi ? "MSI включён." : "MSI выключен.", cancellationToken).ConfigureAwait(false);
         }
         finally
         {
@@ -306,6 +312,9 @@ public sealed class MsiModeManager
             }
 
             await _repository.ClearAsync(cancellationToken).ConfigureAwait(false);
+            await AuditJournal.RecordAsync(
+                _auditJournal, "msi", "devices", AuditAction.Reverted, true,
+                "Параметры прерываний восстановлены из снимка.", cancellationToken).ConfigureAwait(false);
         }
         finally
         {

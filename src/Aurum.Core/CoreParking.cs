@@ -59,17 +59,20 @@ public sealed class CoreParkingManager
     private readonly ICoreParkingStateRepository _repository;
     private readonly IPowerPlanStateRepository _powerPlanRepository;
     private readonly PowerPlanTransactionScope _scope;
+    private readonly IAuditJournal? _auditJournal;
 
     public CoreParkingManager(
         ICoreParkingStore store,
         ICoreParkingStateRepository repository,
         IPowerPlanStateRepository powerPlanRepository,
-        PowerPlanTransactionScope? scope = null)
+        PowerPlanTransactionScope? scope = null,
+        IAuditJournal? auditJournal = null)
     {
         _store = store;
         _repository = repository;
         _powerPlanRepository = powerPlanRepository;
         _scope = scope ?? new PowerPlanTransactionScope();
+        _auditJournal = auditJournal;
     }
 
     public async Task<CoreParkingEvaluation> EvaluateAsync(CancellationToken cancellationToken = default)
@@ -119,6 +122,9 @@ public sealed class CoreParkingManager
 
             await _store.WriteSettingsAsync(managedId.Value, settings, cancellationToken);
             await _store.SetActiveAsync(managedId.Value, cancellationToken);
+            await AuditJournal.RecordAsync(
+                _auditJournal, "core-parking", managedId.Value.ToString(), AuditAction.Applied, true,
+                "Создан и активирован клон плана Core Parking.", cancellationToken);
         }
         catch
         {
@@ -146,6 +152,9 @@ public sealed class CoreParkingManager
 
         await _store.WriteSettingsAsync(state.ManagedPlanId, state.DesiredSettings, cancellationToken);
         await _store.SetActiveAsync(state.ManagedPlanId, cancellationToken);
+        await AuditJournal.RecordAsync(
+            _auditJournal, "core-parking", state.ManagedPlanId.ToString(), AuditAction.Repaired, true,
+            "Клон Core Parking снова активен.", cancellationToken);
     }
 
     public async Task RevertAsync(CancellationToken cancellationToken = default)
@@ -166,6 +175,9 @@ public sealed class CoreParkingManager
         }
 
         await _repository.RemoveAsync(cancellationToken);
+        await AuditJournal.RecordAsync(
+            _auditJournal, "core-parking", state.OriginalPlanId.ToString(), AuditAction.Reverted, true,
+            "Исходный план восстановлен, клон удалён.", cancellationToken);
     }
 
     private async Task TrySetActiveAsync(Guid planId, CancellationToken cancellationToken)

@@ -70,6 +70,55 @@ public static class ServiceAnalyzer
     /// </summary>
     public static bool IsDeclaredOptional(string serviceName) => Contextual.ContainsKey(serviceName);
 
+    /// <summary>
+    /// A batch disable must not strand a running service that still needs one of the
+    /// targets. Dependants that are themselves in the batch are allowed: they are going
+    /// away together. Protected names are already refused by <see cref="ServiceManager"/>.
+    /// </summary>
+    public static void EnsureDisableBatchHasNoRunningDependants(
+        IReadOnlyCollection<string> serviceNames,
+        IReadOnlyList<ServiceAnalysisItem> analysis)
+    {
+        ArgumentNullException.ThrowIfNull(serviceNames);
+        ArgumentNullException.ThrowIfNull(analysis);
+
+        var batch = serviceNames
+            .Where(static name => !string.IsNullOrWhiteSpace(name))
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        if (batch.Count == 0)
+        {
+            return;
+        }
+
+        var lookup = analysis.ToDictionary(static item => item.Service.Name, StringComparer.OrdinalIgnoreCase);
+        foreach (var name in batch)
+        {
+            if (!lookup.TryGetValue(name, out var item))
+            {
+                continue;
+            }
+
+            foreach (var dependantName in item.Dependants)
+            {
+                if (batch.Contains(dependantName))
+                {
+                    continue;
+                }
+
+                if (!lookup.TryGetValue(dependantName, out var dependant))
+                {
+                    continue;
+                }
+
+                if (dependant.Service.State == ServiceRunState.Running)
+                {
+                    throw new InvalidOperationException(
+                        $"Нельзя отключить «{item.Service.DisplayName}»: служба «{dependant.Service.DisplayName}» сейчас запущена и зависит от неё.");
+                }
+            }
+        }
+    }
+
     public static IReadOnlyList<ServiceAnalysisItem> Analyze(IEnumerable<ServiceDefinition> definitions)
     {
         var services = definitions.ToArray();

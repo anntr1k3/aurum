@@ -284,34 +284,19 @@ public sealed class TweakEngine
         return errors;
     }
 
-    private async Task RecordAsync(
+    private Task RecordAsync(
         string subjectId,
         string subjectName,
         AuditAction action,
         bool succeeded,
         string detail,
-        CancellationToken cancellationToken)
-    {
-        if (_auditJournal is null)
-        {
-            return;
-        }
-
-        try
-        {
-            await _auditJournal.AppendAsync(
-                new AuditEntry(
-                    DateTimeOffset.UtcNow,
-                    "tweak",
-                    $"{subjectName} ({subjectId})",
-                    action,
-                    succeeded,
-                    detail),
-                cancellationToken);
-        }
-        catch
-        {
-            // The journal must not fail a registry transaction.
-        }
-    }
+        CancellationToken cancellationToken) =>
+        AuditJournal.RecordAsync(
+            _auditJournal,
+            "tweak",
+            $"{subjectName} ({subjectId})",
+            action,
+            succeeded,
+            detail,
+            cancellationToken);
 }

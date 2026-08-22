@@ -11,14 +11,14 @@ Then open `http://localhost:4173/`.
 ## Deployment
 
 The canonical URL, the Open Graph tags, `robots.txt` and `sitemap.xml` all assume
-`https://anntr1k3.github.io/Aurum/`, which is what GitHub Pages serves when it is
+`https://anntr1k3.github.io/aurum/`, which is what GitHub Pages serves when it is
 pointed at the `website/` folder on `main`. If the site moves to a custom domain,
 update the absolute URLs in the `<head>` of `index.html` plus both of those files.
 
 Two things to know about that setup:
 
 - **`robots.txt` is ignored at a subpath.** Crawlers only read it from the domain
-  root, so `anntr1k3.github.io/Aurum/robots.txt` has no effect. The file is here so
+  root, so `anntr1k3.github.io/aurum/robots.txt` has no effect. The file is here so
   it becomes correct the moment a custom domain is used; until then, submit
   `sitemap.xml` directly in Search Console instead.
 - **Links to project documentation are absolute.** They point at `blob/main` on
@@ -27,13 +27,9 @@ Two things to know about that setup:
 
 ## Known gaps
 
-- `og:image` reuses the 256×256 application icon, so link previews render as a small
-  square card (`twitter:card` is set to `summary` to match). A purpose-made 1200×630
-  image would allow `summary_large_image`.
-- `fonts/Unbounded-Variable.ttf` is 760 KB and is only used for headings and the
-  wordmark. Converting to WOFF2 and subsetting to Cyrillic and Latin would remove
-  most of that weight. The same two font files are also duplicated in
-  `src/Aurum.App/Fonts/`, so each one is stored twice in the repository.
+- `og:image` is a 16:9 cover (`og-cover.png`) rather than a purpose-cut 1200×630
+  file; `twitter:card` is `summary_large_image`.
+- Heading fonts are WOFF2 subsets (Cyrillic + Latin). The WPF app keeps separate TTF files under `src/Aurum.App/Fonts/` because pack:// resources cannot share the site folder.
 
 ## Editing rules
 

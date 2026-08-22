@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://anntr1k3.github.io/Aurum/sitemap.xml
+Sitemap: https://anntr1k3.github.io/aurum/sitemap.xml

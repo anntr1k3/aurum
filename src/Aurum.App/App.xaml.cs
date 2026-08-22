@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.IO;
 using System.Text;
 using System.Windows;
@@ -75,11 +76,20 @@ public partial class App : Application
         try
         {
             var logPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Aurum", "crash.log");
-            MessageBox.Show(
-                $"Произошла непредвиденная ошибка в приложении:\n\n{ex.Message}\n\nПодробности записаны в лог-файл:\n{logPath}",
+            var result = MessageBox.Show(
+                $"Произошла непредвиденная ошибка в приложении:\n\n{ex.Message}\n\nПодробности записаны в журнал:\n{logPath}\n\nОткрыть crash.log?",
                 "Aurum · Ошибка",
-                MessageBoxButton.OK,
-                MessageBoxImage.Warning);
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Warning,
+                MessageBoxResult.No);
+            if (result == MessageBoxResult.Yes)
+            {
+                Process.Start(new ProcessStartInfo
+                {
+                    FileName = logPath,
+                    UseShellExecute = true
+                });
+            }
         }
         catch
         {

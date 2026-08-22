@@ -5,10 +5,11 @@ implemented until they are present in the application and covered by checks.
 
 ## Current baseline
 
-- Reversible HKCU tweak engine with drift detection and repair.
-- Basic Windows, architecture, elevation, and AtlasOS marker information.
-- Offline AtlasOS structure and selected binary hash checks.
-- Preview-first cleanup for user temp files, shader cache, and crash dumps.
+- Reversible HKCU tweak engine with drift detection, repair, and a local audit log.
+- Elevation warning and restart-as-administrator before writes.
+- Service, MSI, power, Core Parking, DNS, and storage mutations with rollback snapshots.
+- Offline AtlasOS structure checks and preview-first cleanup.
+- Hardware monitoring slice and a published single-file Windows build (`v1.0.1`).
 
 ## 1. Hardware monitoring
 
@@ -56,9 +57,9 @@ The default storage surface now presents this as one plain-language SSD-care
 decision; volume inventory, command previews, and evidence are kept behind a
 technical-details control.
 
-Optimize Drives history, SMART/health data, hibernation, page-file, indexing,
-SysMain, 8.3-name, and last-access diagnostics remain planned. Aurum does not
-yet change any of those settings.
+Hibernation, SysMain, 8.3 names, and last-access timestamps can already be
+toggled with rollback snapshots. Optimize Drives history, SMART/health data,
+and page-file/indexing diagnostics remain planned.
 
 This feature is inspired by the workflow of SSD Mini Tweaker but must be an
 independent, auditable implementation. Aurum will not copy its code or blindly
@@ -115,8 +116,9 @@ Core parking must never be presented as a universally beneficial on/off switch.
 **Status:** inventory, dependency analysis, and reversible per-service
 disable/revert/repair are implemented. Presets group optional services by
 capability. Only declared optional names can be disabled or written from a
-snapshot; protected names cannot. Workload-aware batch refusal and live
-parked-core visualization remain future work.
+snapshot; protected names cannot. A batch disable is refused when a running
+service outside the batch still depends on a target. Workload heuristics beyond
+live reverse-dependants remain future work.
 
 - Inventory service state, startup type, dependencies, and dependants.
 - Group optional services by capability rather than publish a universal
@@ -130,15 +132,10 @@ services remain outside recommended disable profiles.
 
 ## 5. Network diagnostics and tuning
 
-**Status:** the first read-only diagnostics slice is implemented. Aurum lists
-network interfaces with operational state, type, negotiated speed, MTU, MAC,
-IPv4/IPv6 addresses, gateways, and DNS servers. It reads the localized global
-TCP report through the supported `netsh` query and runs a four-request ICMP
-latency/loss sample only after an explicit click. Per-adapter RSS/RSC detail,
-throughput benchmarks, DNS comparison, and all reversible tuning remain planned.
-The default screen now offers only the latency/loss check and explains exactly
-what it will do. Adapter and TCP data remain available on demand in the
-technical-details view.
+**Status:** adapter inventory, an explicit ICMP probe, reversible DNS presets,
+DNS flush, and TCP auto-tuning/ECN writes are implemented. Revert refuses a DNS
+snapshot when the live adapter id no longer matches. Per-adapter RSS/RSC detail,
+throughput benchmarks, and DNS comparison remain planned.
 
 - Show adapter, link speed, DNS, MTU, RSS, ECN, receive-window autotuning, and
   relevant offload state.
@@ -150,9 +147,15 @@ technical-details view.
 
 ## Delivery order
 
-1. Read-only hardware inventory and live monitoring. **Initial slice delivered.**
-2. Power-plan inventory and reversible selection. **Delivered.**
-3. Storage diagnostics and safe retrim workflow. **Initial slice delivered.**
-4. Core-parking inspection and advanced opt-in controls. **Initial slice delivered.**
-5. Service dependency analyzer. **Read-only slice delivered.**
-6. Network diagnostics before any tuning controls. **Read-only slice delivered.**
+Shipped through `v1.0.1`: monitoring, power plans, Core Parking, storage retrim,
+service mutations, network diagnostics and DNS/TCP tuning, MSI, system timer,
+audit log for tweaks, snapshot allowlists.
+
+Next:
+
+1. Hygiene around the released product: crash-log open, audit remaining managers,
+   canonical site URLs, Node 24 GitHub Actions.
+2. Trust on existing write paths: service batch dependants, exclusive cleanup
+   deletes, DNS adapter-id matching.
+3. Site delivery: OG cover, font subset, tag-driven releases.
+4. No new tweak categories until the items above stay green.

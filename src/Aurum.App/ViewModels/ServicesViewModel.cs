@@ -11,6 +11,7 @@ public sealed class ServiceGroupItemViewModel : ObservableObject
     private readonly Action<string, bool> _report;
     private readonly Func<string, bool> _confirm;
     private readonly Func<Task> _refreshAll;
+    private readonly Func<IReadOnlyList<ServiceAnalysisItem>> _liveAnalysis;
     private ServiceGroupEvaluation? _evaluation;
 
     public ServiceGroupItemViewModel(
@@ -18,13 +19,15 @@ public sealed class ServiceGroupItemViewModel : ObservableObject
         ServiceManager manager,
         Action<string, bool> report,
         Func<string, bool> confirm,
-        Func<Task> refreshAll)
+        Func<Task> refreshAll,
+        Func<IReadOnlyList<ServiceAnalysisItem>> liveAnalysis)
     {
         _group = group;
         _manager = manager;
         _report = report;
         _confirm = confirm;
         _refreshAll = refreshAll;
+        _liveAnalysis = liveAnalysis;
 
         DisableCommand = new AsyncRelayCommand(DisableAsync, () => CanDisable);
         RevertCommand = new AsyncRelayCommand(RevertAsync, () => CanRevert);
@@ -107,6 +110,7 @@ public sealed class ServiceGroupItemViewModel : ObservableObject
 
         try
         {
+            ServiceAnalyzer.EnsureDisableBatchHasNoRunningDependants(ServiceNames, _liveAnalysis());
             foreach (var serviceName in ServiceNames)
             {
                 try
@@ -370,6 +374,7 @@ public sealed class ServicesViewModel : ObservableObject
     private readonly Action<string, bool> _report;
     private readonly Func<string, bool> _confirm;
     private IReadOnlyList<ServiceItemViewModel> _all = [];
+    private IReadOnlyList<ServiceAnalysisItem> _analysis = [];
     private ServiceItemViewModel? _selectedService;
     private string _searchText = string.Empty;
     private string _summary = "Считываем базу Service Control Manager…";
@@ -389,7 +394,7 @@ public sealed class ServicesViewModel : ObservableObject
         _confirm = confirm;
 
         Groups = new ObservableCollection<ServiceGroupItemViewModel>(
-            BuiltInServiceGroups.All.Select(g => new ServiceGroupItemViewModel(g, _manager, _report, _confirm, RefreshAsync)));
+            BuiltInServiceGroups.All.Select(g => new ServiceGroupItemViewModel(g, _manager, _report, _confirm, RefreshAsync, () => _analysis)));
 
         RefreshCommand = new AsyncRelayCommand(RefreshAsync, () => !IsBusy);
         ShowContextualCommand = new RelayCommand<object>(_ => { ContextualOnly = true; ApplyFilter(); });
@@ -457,6 +462,7 @@ public sealed class ServicesViewModel : ObservableObject
         try
         {
             var targetServiceNames = new[] { "DiagTrack", "dmwappushservice", "weridsvc", "wisvc", "RetailDemo", "MapsBroker", "lfsvc", "PhoneSvc" };
+            ServiceAnalyzer.EnsureDisableBatchHasNoRunningDependants(targetServiceNames, _analysis);
             int count = 0;
             foreach (var name in targetServiceNames)
             {
@@ -559,6 +565,7 @@ public sealed class ServicesViewModel : ObservableObject
         try
         {
             var captured = await _inventory.CaptureAsync();
+            _analysis = captured.ToArray();
             var serviceDefs = captured.Select(static c => c.Service).ToArray();
 
             // Evaluate groups
