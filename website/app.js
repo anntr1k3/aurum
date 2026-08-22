@@ -3,6 +3,7 @@ const featureContent = {
     title: "Аппаратные прерывания (MSI Mode)",
     copy: "Включает Message Signaled Interrupts для видеокарты, сети, звука и накопителей и задаёт приоритет прерываний. Исходные значения каждого устройства сохраняются до изменения.",
     result: "Обратимая настройка MSI, без обещаний FPS",
+    label: "Конфигурация MSI",
     rows: [["NVIDIA RTX GPU", "MSI, высокий приоритет"], ["Realtek Gaming 2.5GbE", "MSI, высокий приоритет"], ["USB xHCI Controller", "MSI, обычный приоритет"]],
     count: "1-клик пресет"
   },
@@ -10,13 +11,15 @@ const featureContent = {
     title: "Разрешение системного таймера",
     copy: "Задаёт разрешение таймера через NtSetTimerResolution. Действует, пока процесс держит запрос, и сбрасывается без перезагрузки. Полезно измерить до и после, а не принимать как обязательный шаг.",
     result: "Включается и снимается без перезагрузки",
-    rows: [["Запрошенное разрешение", "0.500 мс"], ["Снятие запроса", "без перезагрузки"], ["Штатный таймер Windows", "обычно 15.625 мс"]],
+    label: "Системный таймер",
+    rows: [["Запрос процесса", "пока Aurum запущен"], ["Снятие запроса", "без перезагрузки"], ["Штатный таймер Windows", "обычно 15.625 мс"]],
     count: "Native API"
   },
   tweaks: {
     title: "Твики, которые можно объяснить и откатить",
     copy: "Каталог поддерживаемых настроек Windows: приоритет активного процесса, удержание ядра в RAM, сетевой троттлинг и другие. Каждая запись называет точные значения и хранит снимок до применения.",
     result: "Исходное состояние всегда сохраняется",
+    label: "Снимок твика",
     rows: [["Win32PrioritySeparation", "снимок до записи"], ["DisablePagingExecutive", "снимок до записи"], ["NetworkThrottlingIndex", "снимок до записи"]],
     count: "24 настройки"
   },
@@ -24,6 +27,7 @@ const featureContent = {
     title: "Core Parking и схемы питания",
     copy: "Переключает существующую схему Windows или применяет парковку ядер только к клону плана Aurum. Встроенные схемы не переписываются. На гибридных процессорах полное распарковывание — осознанный выбор, не универсальная кнопка.",
     result: "Исходная схема восстанавливается целиком",
+    label: "Схема питания",
     rows: [["Исходный план", "GUID сохранён"], ["План Aurum", "изолированный клон"], ["Откат", "активация исходного GUID"]],
     count: "Изолированный клон"
   },
@@ -31,6 +35,7 @@ const featureContent = {
     title: "DNS и диагностика сети",
     copy: "Профили DNS (Cloudflare, Google, AdGuard, Quad9), сброс кэша и проверка задержки ICMP после явного нажатия. TCP-параметры меняются только через документированные команды Windows.",
     result: "DNS возвращается к DHCP одним откатом",
+    label: "Сетевой профиль",
     rows: [["Cloudflare DNS", "1.1.1.1 / 1.0.0.1"], ["Сброс кэша", "ipconfig /flushdns"], ["Замер", "4 ICMP-запроса по кнопке"]],
     count: "Профили DNS"
   },
@@ -38,6 +43,7 @@ const featureContent = {
     title: "Обслуживание дисков и ReTrim",
     copy: "Диагностика накопителей и команда ReTrim только для SSD и NVMe, у которых Windows подтвердила TRIM. На вращающихся дисках действие недоступно.",
     result: "TRIM не предлагается для HDD",
+    label: "Обслуживание диска",
     rows: [["NVMe SSD", "ReTrim по подтверждению"], ["SATA SSD", "ReTrim по подтверждению"], ["HDD", "исключён из TRIM"]],
     count: "Защита HDD"
   },
@@ -45,6 +51,7 @@ const featureContent = {
     title: "Мониторинг без фонового демона",
     copy: "Загрузка процессора, видеокарты, памяти, диска и сети. Счётчики обновляются, только пока открыт раздел мониторинга, и никуда не отправляются.",
     result: "Нет опроса в фоне и нет телеметрии",
+    label: "Живые счётчики",
     rows: [["CPU", "нативные счётчики PDH"], ["GPU", "если Windows их отдаёт"], ["RAM", "GlobalMemoryStatusEx"]],
     count: "Только на экране"
   }
@@ -82,6 +89,7 @@ function selectFeature(key) {
   detail.querySelector("[data-detail-title]").textContent = item.title;
   detail.querySelector("[data-detail-copy]").textContent = item.copy;
   detail.querySelector("[data-detail-result]").textContent = item.result;
+  detail.querySelector("[data-audit-label]").textContent = item.label;
   detail.querySelector(".audit-head strong").textContent = item.count;
   detail.querySelectorAll(".audit-line").forEach((row, index) => {
     row.querySelector("code").textContent = item.rows[index][0];

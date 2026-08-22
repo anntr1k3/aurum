@@ -230,6 +230,7 @@ svg { display: block; fill: none; stroke: currentColor; stroke-linecap: round; s
 .audit-head, .audit-line { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 9px 14px; border-bottom: 1px solid var(--border-soft); }
 .audit-line:last-child { border-bottom: 0; }
 .audit-head span { color: var(--success); }
+.audit-head em { font-style: normal; font-weight: inherit; }
 .audit-head i { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--success); }
 .audit-head strong { color: var(--muted); font-weight: 400; }
 .audit-line span { color: var(--accent-hover); }
